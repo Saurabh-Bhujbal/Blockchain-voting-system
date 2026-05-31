@@ -61,7 +61,13 @@
 
   <script>
     function navigate(page) {
-      const auth = new URLSearchParams(window.location.search).get('Authorization');
+      let auth = new URLSearchParams(window.location.search).get('Authorization');
+      if (!auth) {
+        const localToken = localStorage.getItem('jwtTokenAdmin');
+        if (localToken) {
+          auth = 'Bearer ' + localToken;
+        }
+      }
       if (auth) {
         window.location.href = `./${page}?Authorization=${encodeURIComponent(auth)}`;
       } else {

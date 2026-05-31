@@ -250,7 +250,13 @@
   <script src="../dist/app.bundle.js" type="module"></script>
   <script>
     /* ── Auth / Navigation ── */
-    const auth = new URLSearchParams(window.location.search).get('Authorization');
+    let auth = new URLSearchParams(window.location.search).get('Authorization');
+    if (!auth) {
+      const localToken = localStorage.getItem('jwtTokenAdmin');
+      if (localToken) {
+        auth = 'Bearer ' + localToken;
+      }
+    }
     document.getElementById('backBtn').onclick = () => {
       window.location.href = `./admin.html?Authorization=${encodeURIComponent(auth)}`;
     };
