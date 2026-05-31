@@ -5,9 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:app": "browserify ./src/js/app.js -o ./src/dist/app.bundle.js",
-    "build:login": "browserify ./src/js/login.js -o ./src/dist/login.bundle.js",
-    "build:face": "browserify ./src/js/faceRecognition.js -o ./src/dist/face.bundle.js"
+    "build": "npm run build:app",
+    "build:app": "browserify ./src/js/app.js -o ./src/dist/app.bundle.js"
   },
   "author": "Saurabh-Abhishek-Amey-Vivek",
   "license": "ISC",
