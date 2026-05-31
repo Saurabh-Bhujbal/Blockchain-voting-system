@@ -1,8 +1,11 @@
 # Import required modules
 import dotenv
 import os
+import shutil
+import re
 import mysql.connector
-from fastapi import FastAPI, HTTPException, status, Request
+from fastapi import FastAPI, HTTPException, status, Request, File, UploadFile, Form
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from mysql.connector import errorcode
@@ -53,6 +56,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Ensure logos directory exists
+LOGOS_DIR = os.path.join(os.path.dirname(__file__), "logos")
+os.makedirs(LOGOS_DIR, exist_ok=True)
+
+# Mount logos directory for serving static images
+app.mount("/logos", StaticFiles(directory=LOGOS_DIR), name="logos")
 
 # Connect to the MySQL database
 try:
@@ -170,6 +180,29 @@ async def register_admin(voter: AdminRegister):
         )
     )
 # ── Admin Registration Block END ──
+
+# ── Logo Upload Endpoint Begin ──
+@app.post("/upload-logo")
+async def upload_logo(candidateName: str = Form(...), logo: UploadFile = File(...)):
+    try:
+        # Sanitize candidate name to match the frontend (lowercase, replace non-alphanumeric with hyphen)
+        sanitized_name = re.sub(r'[^a-z0-9]', '-', candidateName.lower())
+        sanitized_name = re.sub(r'-+', '-', sanitized_name).strip('-')
+        
+        # Get extension
+        ext = os.path.splitext(logo.filename)[1] or '.png'
+        filename = f"{sanitized_name}{ext}"
+        
+        file_path = os.path.join(LOGOS_DIR, filename)
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(logo.file, buffer)
+            
+        return {"success": True, "filename": filename}
+    except Exception as e:
+        print(f"Error uploading logo: {e}")
+        raise HTTPException(status_code=500, detail="Failed to upload logo")
+# ── Logo Upload Endpoint End ──
 
 # ── Face Recognition Pydantic Model Begin ──
 class FaceData(BaseModel):

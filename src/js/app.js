@@ -268,8 +268,8 @@ window.App = {
         var voteCount = data[3];
         
         var logoName = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        var logoHtml = `<img src="/logos/${logoName}.png" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
-        logoHtml += `<img src="/logos/${logoName}.jpg" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
+        var logoHtml = `<img src="http://192.168.137.1:8000/logos/${logoName}.png" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
+        logoHtml += `<img src="http://192.168.137.1:8000/logos/${logoName}.jpg" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
         
         var actionContent = "";
         if (isAdmin || isResultsPage) {
