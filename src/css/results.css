@@ -57,6 +57,47 @@
   transform: rotate(180deg);
 }
 
+/* ─── Election Selector ─── */
+.election-selector {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255,255,255,0.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23C5A542' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center;
+  border: 1.5px solid rgba(197,165,66,0.45);
+  border-radius: 10px;
+  padding: 12px 40px 12px 16px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  min-width: 260px;
+  max-width: 400px;
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  display: block;
+  margin: 0 auto;
+}
+.election-selector:hover {
+  border-color: var(--gold);
+  background-color: rgba(197,165,66,0.08);
+}
+.election-selector:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(197,165,66,0.2);
+  background-color: rgba(197,165,66,0.06);
+}
+.election-selector option {
+  background: #0f1930;
+  color: var(--white);
+  font-weight: 500;
+  padding: 8px 12px;
+}
+.election-selector option:disabled {
+  color: var(--text-muted);
+}
+
 /* ─── Hero Header ─── */
 .results-hero {
   background: linear-gradient(180deg,
