@@ -73,3 +73,24 @@ registerForm.addEventListener('submit', (event) => {
     }
   });
 });
+
+// Dynamic backend server configuration helper
+const configLink = document.getElementById('configBackendLink');
+if (configLink) {
+  configLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    const current = localStorage.getItem('backendUrl') || `http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:8000`;
+    const url = prompt("Enter Backend Server API URL (e.g. your Laptop's Local IP or HTTPS Tunnel):\n\nCurrently connected to:", current);
+    if (url !== null) {
+      const cleanUrl = url.trim();
+      if (cleanUrl) {
+        localStorage.setItem('backendUrl', cleanUrl);
+        alert(`Server URL updated successfully!\n\nNew target: ${cleanUrl}`);
+      } else {
+        localStorage.removeItem('backendUrl');
+        alert("Server URL reset to dynamic fallback.");
+      }
+      window.location.reload();
+    }
+  });
+}
