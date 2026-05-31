@@ -268,8 +268,8 @@ window.App = {
         var voteCount = data[3];
         
         var logoName = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        var logoHtml = `<img src="http://192.168.137.1:8000/logos/${logoName}.png" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
-        logoHtml += `<img src="http://192.168.137.1:8000/logos/${logoName}.jpg" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
+        var logoHtml = `<img src="http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:8000/logos/${logoName}.png" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
+        logoHtml += `<img src="http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:8000/logos/${logoName}.jpg" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
         
         var actionContent = "";
         if (isAdmin || isResultsPage) {
@@ -344,7 +344,7 @@ window.addEventListener("load", function() {
     window.eth = new Web3(window.ethereum)
   } else {
     console.warn("No web3 detected. Falling back to http://192.168.137.1:9545.")
-    window.eth = new Web3(new Web3.providers.HttpProvider("http://192.168.137.1:9545"))
+    window.eth = new Web3(new Web3.providers.HttpProvider(`http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:9545`))
   }
   window.App.eventStart()
 })

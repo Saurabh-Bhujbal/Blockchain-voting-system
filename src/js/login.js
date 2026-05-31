@@ -29,7 +29,7 @@ loginForm.addEventListener('submit', (event) => {
     'Authorization': `Bearer ${token}`,
   };
 
-  fetch(`http://192.168.137.1:8000/login?voter_id=${voter_id}&password=${password}&expected_role=${expectedRole}`, { headers })
+  fetch(`http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:8000/login?voter_id=${voter_id}&password=${password}&expected_role=${expectedRole}`, { headers })
   .then(async response => {
     if (response.ok) {
       return response.json();

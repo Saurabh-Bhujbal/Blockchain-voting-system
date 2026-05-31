@@ -36,7 +36,7 @@ registerForm.addEventListener('submit', (event) => {
     admin_passcode: admin_passcode
   };
 
-  fetch('http://192.168.137.1:8000/register-admin', {
+  fetch(`http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:8000/register-admin`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
