@@ -227511,15 +227511,87 @@ window.App = {
           alert("Please select an election first.");
           return;
         }
-        var nameCandidate = $('#name').val();
-        var partyCandidate = $('#party').val();
+        var nameCandidate = $('#name').val().trim();
+        var partyCandidate = $('#party').val().trim();
+        
+        if (!nameCandidate || !partyCandidate) {
+          alert("Please enter both candidate name and party.");
+          return;
+        }
+
+        const logoInput = document.getElementById('partyLogo');
+        const logoFile = logoInput ? logoInput.files[0] : null;
+        if (!logoFile) {
+          alert("Please select a party logo.");
+          return;
+        }
+
         console.log("Adding candidate:", nameCandidate, "to election:", App.currentElectionId);
         
         $('.btn-submit-content').hide();
         $('.btn-submit-loader').show();
 
-        await App.instance.addCandidate(App.currentElectionId, nameCandidate, partyCandidate);
-        // Page reload will be handled by UI JS after logo upload
+        // 1. Submit the blockchain transaction and wait for Metamask confirmation
+        const tx = await App.instance.addCandidate(App.currentElectionId, nameCandidate, partyCandidate);
+        console.log("Blockchain transaction successful:", tx);
+
+        // 2. Upload the logo to the dynamic backend host (avoiding Mixed Content block where possible)
+        const formData = new FormData();
+        formData.append('candidateName', nameCandidate);
+        formData.append('logo', logoFile);
+
+        const backendHost = window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1';
+        try {
+          const res = await fetch(`http://${backendHost}:8000/upload-logo`, {
+            method: 'POST',
+            body: formData
+          });
+          const data = await res.json();
+          console.log('Logo upload response:', data);
+        } catch (uploadErr) {
+          console.error("Logo upload failed, but MetaMask transaction was confirmed:", uploadErr);
+        }
+
+        // 3. Display success status message
+        const showStatusFn = window.showStatus;
+        if (typeof showStatusFn === 'function') {
+          showStatusFn('addMsg', 'success', 'Successfully added the candidate!');
+        } else {
+          // Fallback status indicator if showStatus isn't globally exposed
+          const el = document.getElementById('addMsg');
+          if (el) {
+            el.className = 'status-msg status-success';
+            el.innerHTML = `<i class="fa-solid fa-circle-check"></i> Successfully added the candidate!`;
+            el.style.display = 'flex';
+          }
+        }
+
+        // Reset form inputs
+        $('#name').val('');
+        $('#party').val('');
+        if (typeof window.removeLogo === 'function') {
+          window.removeLogo();
+        } else {
+          const fileInput = document.getElementById('partyLogo');
+          if (fileInput) fileInput.value = '';
+          const preview = document.getElementById('logoPreview');
+          if (preview) preview.style.display = 'none';
+          const dropZoneEl = document.getElementById('dropZone');
+          if (dropZoneEl) dropZoneEl.style.display = 'block';
+        }
+
+        // Clear loader
+        $('.btn-submit-content').show();
+        $('.btn-submit-loader').hide();
+
+        // 4. Close modal and reload candidates list after a short delay
+        setTimeout(() => {
+          if (typeof window.closeAllModals === 'function') {
+            window.closeAllModals();
+          }
+          App.loadCandidates(App.currentElectionId);
+        }, 2000);
+
       } catch (err) {
         console.error("Add Candidate error:", err);
         alert("Error adding candidate. Check console.");
