@@ -11,6 +11,7 @@
 
 // ── Face Recognition Import Begin ──
 import { FaceRecognition } from './faceRecognition.js';
+import { getBackendUrl } from './config.js';
 // ── Face Recognition Import End ──
 
 const registerForm = document.getElementById('registerForm');
@@ -36,7 +37,7 @@ registerForm.addEventListener('submit', (event) => {
     admin_passcode: admin_passcode
   };
 
-  fetch(`http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:8000/register-admin`, {
+  fetch(`${getBackendUrl()}/register-admin`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

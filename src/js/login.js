@@ -1,5 +1,6 @@
 // ── Face Recognition Import Begin ──
 import { FaceRecognition } from './faceRecognition.js';
+import { getBackendUrl } from './config.js';
 // ── Face Recognition Import End ──
 
 const loginForm = document.getElementById('loginForm');
@@ -29,7 +30,7 @@ loginForm.addEventListener('submit', (event) => {
     'Authorization': `Bearer ${token}`,
   };
 
-  fetch(`http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:8000/login?voter_id=${voter_id}&password=${password}&expected_role=${expectedRole}`, { headers })
+  fetch(`${getBackendUrl()}/login?voter_id=${voter_id}&password=${password}&expected_role=${expectedRole}`, { headers })
   .then(async response => {
     if (response.ok) {
       return response.json();

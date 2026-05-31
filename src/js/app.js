@@ -1,5 +1,21 @@
 // import "../css/style.css"
 
+function getBackendUrl() {
+  // Check URL query parameters for override
+  const urlParams = new URLSearchParams(window.location.search);
+  const backendParam = urlParams.get('backend');
+  if (backendParam) {
+    localStorage.setItem('backendUrl', backendParam);
+  }
+
+  const saved = localStorage.getItem('backendUrl');
+  if (saved) return saved.replace(/\/$/, ""); // Strip trailing slash
+
+  // Dynamic fallback based on hostname
+  const hostIp = (window.location.hostname === '192.168.137.1') ? '192.168.137.1' : '127.0.0.1';
+  return `http://${hostIp}:8000`;
+}
+
 const Web3 = require('web3');
 const contract = require('@truffle/contract');
 
@@ -98,9 +114,8 @@ window.App = {
         formData.append('candidateName', nameCandidate);
         formData.append('logo', logoFile);
 
-        const backendHost = window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1';
         try {
-          const res = await fetch(`http://${backendHost}:8000/upload-logo`, {
+          const res = await fetch(`${getBackendUrl()}/upload-logo`, {
             method: 'POST',
             body: formData
           });
@@ -339,9 +354,9 @@ window.App = {
         var party = data[2];
         var voteCount = data[3];
         
-        var logoName = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        var logoHtml = `<img src="http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:8000/logos/${logoName}.png" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
-        logoHtml += `<img src="http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:8000/logos/${logoName}.jpg" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
+        var backendUrl = getBackendUrl();
+        var logoHtml = `<img src="${backendUrl}/logos/${logoName}.png" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
+        logoHtml += `<img src="${backendUrl}/logos/${logoName}.jpg" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
         
         var actionContent = "";
         if (isAdmin || isResultsPage) {
