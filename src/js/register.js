@@ -25,7 +25,7 @@ registerForm.addEventListener('submit', (event) => {
     password: password
   };
 
-  fetch('http://127.0.0.1:8000/register', {
+  fetch('http://192.168.1.13:8000/register', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

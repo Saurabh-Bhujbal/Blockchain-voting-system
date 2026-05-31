@@ -78,7 +78,7 @@ export const FaceRecognition = {
 
             if (statusEl) statusEl.textContent = "Processing face data...";
 
-            const response = await fetch('http://localhost:8000/face/register', {
+            const response = await fetch('http://192.168.1.13:8000/face/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ voter_id: voterId, image: imageData }),
@@ -143,7 +143,7 @@ export const FaceRecognition = {
 
             if (statusEl) statusEl.textContent = "Verifying face...";
 
-            const response = await fetch('http://localhost:8000/face/login', {
+            const response = await fetch('http://192.168.1.13:8000/face/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ voter_id: voterId, image: imageData }),
