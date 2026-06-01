@@ -13,9 +13,7 @@ import jwt
 from pydantic import BaseModel
 import tempfile as tmp_module
 
-# ── Face Recognition Imports Begin ──
-from deepface import DeepFace
-import numpy
+# ── Face Recognition Imports (Lazy loaded) ──
 import base64
 import io
 import json
@@ -253,6 +251,9 @@ class FaceData(BaseModel):
 @app.post("/face/register")
 async def face_register(data: FaceData):
     try:
+        # Check if we are running in simulated authentication mode
+        is_simulated = os.environ.get("SIMULATED_FACE_AUTH", "false").lower() == "true"
+
         image_b64 = data.image
         if ',' in image_b64:
             image_b64 = image_b64.split(',')[1]
@@ -260,6 +261,19 @@ async def face_register(data: FaceData):
         image_bytes = base64.b64decode(image_b64)
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
+        if is_simulated:
+            # Simulated mode: save a mock 128-element embedding vector
+            print("SIMULATED_FACE_AUTH: Generating mock face encoding")
+            mock_encoding = [0.0] * 128
+            encoding_json = json.dumps(mock_encoding)
+            
+            cnx, cursor = get_db()
+            cursor.execute("UPDATE voters_base SET face_encoding = %s WHERE voter_id = %s", (encoding_json, data.voter_id))
+            cnx.commit()
+            return {"status": "Face registered successfully"}
+
+        # Normal mode: Import heavy dependencies lazily to avoid startup crashes
+        from deepface import DeepFace
         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
             image.save(tmp, format='JPEG')
             tmp_path = tmp.name
@@ -294,6 +308,9 @@ async def face_register(data: FaceData):
 @app.post("/face/login")
 async def face_login(data: FaceData):
     try:
+        # Check if we are running in simulated authentication mode
+        is_simulated = os.environ.get("SIMULATED_FACE_AUTH", "false").lower() == "true"
+
         cnx, cursor = get_db()
         cursor.execute("SELECT face_encoding, role, password FROM voters_base WHERE voter_id = %s", (data.voter_id,))
         user_data = cursor.fetchone()
@@ -301,7 +318,6 @@ async def face_login(data: FaceData):
         if not user_data or not user_data[0]:
             raise HTTPException(status_code=404, detail="Face not registered")
 
-        stored_encoding = numpy.array(json.loads(user_data[0]))
         role = user_data[1]
         password = user_data[2]
 
@@ -311,6 +327,21 @@ async def face_login(data: FaceData):
 
         image_bytes = base64.b64decode(image_b64)
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+
+        if is_simulated:
+            print("SIMULATED_FACE_AUTH: Bypassing face match checks")
+            token = jwt.encode(
+                {'password': password, 'voter_id': data.voter_id, 'role': role},
+                os.environ['SECRET_KEY'],
+                algorithm='HS256'
+            )
+            return {"token": token, "role": role}
+
+        # Normal mode: Import heavy dependencies lazily
+        import numpy
+        from deepface import DeepFace
+        
+        stored_encoding = numpy.array(json.loads(user_data[0]))
 
         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
             image.save(tmp, format='JPEG')
