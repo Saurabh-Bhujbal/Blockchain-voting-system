@@ -47,7 +47,9 @@ const authorizeUser = (req, res, next) => {
   }
   
   try {
-    const decodedToken = jwt.verify(token, process.env.SECRET_KEY, { algorithms: ['HS256'] });
+    const secretKey = (process.env.SECRET_KEY || "").trim().replace(/^["']|["']$/g, "");
+    console.log(`DEBUG: Verifying JWT. Key length: ${secretKey.length}, Starts with: "${secretKey.substring(0, 5)}...", Ends with: "...${secretKey.slice(-5)}"`);
+    const decodedToken = jwt.verify(token, secretKey, { algorithms: ['HS256'] });
     req.user = decodedToken;
     next(); 
   } catch (error) {

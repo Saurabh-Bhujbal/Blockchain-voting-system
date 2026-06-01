@@ -328,11 +328,14 @@ async def face_login(data: FaceData):
         image_bytes = base64.b64decode(image_b64)
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
+        secret_key = os.environ.get('SECRET_KEY', '').strip().strip("'").strip('"')
+
         if is_simulated:
             print("SIMULATED_FACE_AUTH: Bypassing face match checks")
+            print(f"DEBUG: Signing JWT. Key length: {len(secret_key)}, Starts with: \"{secret_key[:5]}...\", Ends with: \"...{secret_key[-5:]}\"")
             token = jwt.encode(
                 {'password': password, 'voter_id': data.voter_id, 'role': role},
-                os.environ['SECRET_KEY'],
+                secret_key,
                 algorithm='HS256'
             )
             return {"token": token, "role": role}
@@ -365,9 +368,10 @@ async def face_login(data: FaceData):
         is_match = cosine_distance > 0.60
 
         if is_match:
+            print(f"DEBUG: Signing JWT. Key length: {len(secret_key)}, Starts with: \"{secret_key[:5]}...\", Ends with: \"...{secret_key[-5:]}\"")
             token = jwt.encode(
                 {'password': password, 'voter_id': data.voter_id, 'role': role},
-                os.environ['SECRET_KEY'],
+                secret_key,
                 algorithm='HS256'
             )
             return {"token": token, "role": role}
