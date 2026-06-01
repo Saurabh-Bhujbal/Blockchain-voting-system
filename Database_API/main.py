@@ -338,7 +338,13 @@ async def face_login(data: FaceData):
                 secret_key,
                 algorithm='HS256'
             )
-            return {"token": token, "role": role}
+            return {
+                "token": token,
+                "role": role,
+                "debug_backend_key_length": len(secret_key),
+                "debug_backend_key_prefix": secret_key[:5] if secret_key else "",
+                "debug_backend_key_suffix": secret_key[-5:] if secret_key else ""
+            }
 
         # Normal mode: Import heavy dependencies lazily
         import numpy
@@ -374,7 +380,13 @@ async def face_login(data: FaceData):
                 secret_key,
                 algorithm='HS256'
             )
-            return {"token": token, "role": role}
+            return {
+                "token": token,
+                "role": role,
+                "debug_backend_key_length": len(secret_key),
+                "debug_backend_key_prefix": secret_key[:5] if secret_key else "",
+                "debug_backend_key_suffix": secret_key[-5:] if secret_key else ""
+            }
         else:
             raise HTTPException(status_code=401, detail="Face authentication failed")
 
