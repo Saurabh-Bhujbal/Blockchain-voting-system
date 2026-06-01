@@ -53,8 +53,19 @@ const authorizeUser = (req, res, next) => {
     req.user = decodedToken;
     next(); 
   } catch (error) {
+    const secretKey = (process.env.SECRET_KEY || "").trim().replace(/^["']|["']$/g, "");
     console.error("JWT Verification failed:", error.message);
-    return res.status(401).json({ message: 'Invalid authorization token', error: error.message });
+    return res.status(401).json({
+      message: 'Invalid authorization token',
+      error: error.message,
+      debug: {
+        keyLength: secretKey.length,
+        keyPrefix: secretKey.substring(0, 5),
+        keySuffix: secretKey.slice(-5),
+        tokenLength: (token || "").length,
+        tokenPrefix: (token || "").substring(0, 15)
+      }
+    });
   }
 };
 
