@@ -63,7 +63,8 @@ const authorizeUser = (req, res, next) => {
         keyPrefix: secretKey.substring(0, 5),
         keySuffix: secretKey.slice(-5),
         tokenLength: (token || "").length,
-        tokenPrefix: (token || "").substring(0, 15)
+        tokenPrefix: (token || "").substring(0, 15),
+        decodedPayload: jwt.decode(token)
       }
     });
   }
