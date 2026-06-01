@@ -7,9 +7,8 @@ export function getBackendUrl() {
   }
 
   const saved = localStorage.getItem('backendUrl');
-  if (saved) return saved.replace(/\/$/, ""); // Strip trailing slash if present
+  if (saved) return saved.replace(/\/$/, ""); // Strip trailing slash
 
-  // Dynamic fallback based on hostname
-  const hostIp = (window.location.hostname === '192.168.137.1') ? '192.168.137.1' : '127.0.0.1';
-  return `http://${hostIp}:8000`;
+  // ── PRODUCTION: Use deployed Render backend ──
+  return "https://blockchain-voting-system-2-hkad.onrender.com";
 }

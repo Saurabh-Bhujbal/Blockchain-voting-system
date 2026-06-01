@@ -11,6 +11,7 @@ from fastapi.encoders import jsonable_encoder
 from mysql.connector import errorcode
 import jwt
 from pydantic import BaseModel
+import tempfile as tmp_module
 
 # ── Face Recognition Imports Begin ──
 from deepface import DeepFace
@@ -37,7 +38,7 @@ class AdminRegister(BaseModel):
 # Loading the environment variables
 dotenv.load_dotenv()
 
-# Initialize the todoapi app
+# Initialize the app
 app = FastAPI()
 
 # Define the allowed origins for CORS
@@ -45,6 +46,7 @@ origins = [
     "http://localhost:8080",
     "http://127.0.0.1:8080",
     "https://blockchain-voting-system-kappa.vercel.app",
+    "https://blockchain-voting-system-2-hkad.onrender.com",
 ]
 
 # Add CORS middleware
@@ -64,26 +66,72 @@ os.makedirs(LOGOS_DIR, exist_ok=True)
 # Mount logos directory for serving static images
 app.mount("/logos", StaticFiles(directory=LOGOS_DIR), name="logos")
 
-# Connect to the MySQL database
-try:
-    cnx = mysql.connector.connect(
-        user=os.environ['MYSQL_USER'],
-        password=os.environ['MYSQL_PASSWORD'],
-        host=os.environ['MYSQL_HOST'],
-        database=os.environ['MYSQL_DB'],
-    )
-    cursor = cnx.cursor()
-except mysql.connector.Error as err:
-    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print("Something is wrong with your user name or password")
-    elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print("Database does not exist")
+# ── FIX 1: SSL Certificate for Render ──
+# On local machine, use ca.pem file
+# On Render, use MYSQL_SSL_CA environment variable
+def get_ssl_config():
+    if os.path.exists("ca.pem"):
+        # Local development
+        return {"ssl_ca": "ca.pem", "ssl_verify_cert": True}
+    elif os.environ.get("MYSQL_SSL_CA"):
+        # Render deployment — write cert from env var to temp file
+        cert_content = os.environ.get("MYSQL_SSL_CA")
+        cert_path = "/tmp/ca.pem"
+        with open(cert_path, "w") as f:
+            f.write(cert_content)
+        return {"ssl_ca": cert_path, "ssl_verify_cert": True}
     else:
-        print(err)
+        # No SSL (fallback)
+        return {}
+
+# ── FIX 2: Reconnection Logic ──
+# Single connection drops after inactivity on Render free tier
+# This function always returns a live connection
+cnx = None
+cursor = None
+
+def get_db():
+    global cnx, cursor
+    try:
+        if cnx is None or not cnx.is_connected():
+            ssl_config = get_ssl_config()
+            cnx = mysql.connector.connect(
+                user=os.environ['MYSQL_USER'],
+                password=os.environ['MYSQL_PASSWORD'],
+                host=os.environ['MYSQL_HOST'],
+                database=os.environ['MYSQL_DB'],
+                port=int(os.environ.get('MYSQL_PORT', 19015)),
+                **ssl_config
+            )
+            cursor = cnx.cursor()
+            print("Database (re)connected successfully ✅")
+    except mysql.connector.Error as err:
+        print(f"Database connection error: {err}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database connection failed"
+        )
+    return cnx, cursor
+
+# Initial connection on startup
+try:
+    get_db()
+except Exception as e:
+    print(f"Initial DB connection failed: {e}")
+
+# ── FIX 3: Health Endpoint for Cron Job ──
+@app.get("/health")
+async def health():
+    try:
+        get_db()
+        return {"status": "alive", "database": "connected"}
+    except:
+        return {"status": "alive", "database": "disconnected"}
 
 # Define the authentication middleware
 async def authenticate(request: Request):
     try:
+        cnx, cursor = get_db()
         api_key = request.headers.get('authorization').replace("Bearer ", "")
         cursor.execute("SELECT * FROM voters_base WHERE voter_id = %s", (api_key,))
         if api_key not in [row[0] for row in cursor.fetchall()]:
@@ -91,42 +139,41 @@ async def authenticate(request: Request):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Forbidden"
             )
+    except HTTPException:
+        raise
     except:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Forbidden"
         )
 
-# Define the GET endpoint for login (Step 1: password verification only — no JWT)
+# Define the GET endpoint for login
 @app.get("/login")
 async def login(request: Request, voter_id: str, password: str, expected_role: str = None):
     await authenticate(request)
     role = await get_role(voter_id, password)
 
     if expected_role and role != expected_role:
-         raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Access denied. This login is for {expected_role}s only."
         )
 
-    # For ALL users (admin and voter), do NOT issue JWT here.
-    # Face verification is required next for everyone.
     return {'status': 'password_verified', 'role': role}
 
-# Replace 'admin' with the actual role based on authentication
+# Get role based on voter_id and password
 async def get_role(voter_id, password):
     try:
         import bcrypt
+        cnx, cursor = get_db()
         cursor.execute("SELECT role, password FROM voters_base WHERE voter_id = %s", (voter_id,))
         row = cursor.fetchone()
         if row:
             role, stored_hash = row
-            # Check if stored password is a bcrypt hash
             if stored_hash.startswith('$2b$') or stored_hash.startswith('$2a$'):
                 if bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
                     return role
             else:
-                # Legacy plain-text comparison (for existing voter accounts)
                 if password == stored_hash:
                     return role
         raise HTTPException(
@@ -140,11 +187,11 @@ async def get_role(voter_id, password):
             detail="Database error"
         )
 
-# Define the POST endpoint for registration
+# POST endpoint for registration
 @app.post("/register")
 async def register(voter: VoterRegister):
     try:
-        # Check if voter_id already exists
+        cnx, cursor = get_db()
         cursor.execute("SELECT * FROM voters_base WHERE voter_id = %s", (voter.voter_id,))
         if cursor.fetchone():
             raise HTTPException(
@@ -152,7 +199,6 @@ async def register(voter: VoterRegister):
                 detail="Voter ID already registered"
             )
 
-        # Insert new voter with default role 'user'
         sql = "INSERT INTO voters_base (voter_id, name, password, role) VALUES (%s, %s, %s, %s)"
         val = (voter.voter_id, voter.name, voter.password, 'user')
         cursor.execute(sql, val)
@@ -167,9 +213,7 @@ async def register(voter: VoterRegister):
             detail="Database error during registration"
         )
 
-# ── Admin Registration Block BEGIN ──
-# Admin registration is permanently disabled.
-# Admins must be seeded directly in the database by a system administrator.
+# Admin registration permanently disabled
 @app.post("/register-admin")
 async def register_admin(voter: AdminRegister):
     raise HTTPException(
@@ -179,44 +223,36 @@ async def register_admin(voter: AdminRegister):
             "Contact the system administrator to provision admin accounts."
         )
     )
-# ── Admin Registration Block END ──
 
-# ── Logo Upload Endpoint Begin ──
+# Logo Upload Endpoint
 @app.post("/upload-logo")
 async def upload_logo(candidateName: str = Form(...), logo: UploadFile = File(...)):
     try:
-        # Sanitize candidate name to match the frontend (lowercase, replace non-alphanumeric with hyphen)
         sanitized_name = re.sub(r'[^a-z0-9]', '-', candidateName.lower())
         sanitized_name = re.sub(r'-+', '-', sanitized_name).strip('-')
-        
-        # Get extension
+
         ext = os.path.splitext(logo.filename)[1] or '.png'
         filename = f"{sanitized_name}{ext}"
-        
+
         file_path = os.path.join(LOGOS_DIR, filename)
-        
+
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(logo.file, buffer)
-            
+
         return {"success": True, "filename": filename}
     except Exception as e:
         print(f"Error uploading logo: {e}")
         raise HTTPException(status_code=500, detail="Failed to upload logo")
-# ── Logo Upload Endpoint End ──
 
-# ── Face Recognition Pydantic Model Begin ──
+# Face Recognition Pydantic Model
 class FaceData(BaseModel):
     voter_id: str
     image: str
-# ── Face Recognition Pydantic Model End ──
-
-# ── Face Recognition Endpoints Begin ──
 
 # POST /face/register — encode and store a voter's face
 @app.post("/face/register")
 async def face_register(data: FaceData):
     try:
-        # Decode the base64 image (strip data URL prefix if present)
         image_b64 = data.image
         if ',' in image_b64:
             image_b64 = image_b64.split(',')[1]
@@ -224,12 +260,10 @@ async def face_register(data: FaceData):
         image_bytes = base64.b64decode(image_b64)
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
-        # Save to a temp file for DeepFace (it works best with file paths)
         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
             image.save(tmp, format='JPEG')
             tmp_path = tmp.name
 
-        # Extract facial encoding using DeepFace
         try:
             embeddings = DeepFace.represent(img_path=tmp_path, model_name='Facenet', enforce_detection=True)
         except ValueError:
@@ -243,7 +277,7 @@ async def face_register(data: FaceData):
         encoding = embeddings[0]['embedding']
         encoding_json = json.dumps(encoding)
 
-        # Save encoding to database
+        cnx, cursor = get_db()
         cursor.execute("UPDATE voters_base SET face_encoding = %s WHERE voter_id = %s", (encoding_json, data.voter_id))
         cnx.commit()
 
@@ -260,7 +294,7 @@ async def face_register(data: FaceData):
 @app.post("/face/login")
 async def face_login(data: FaceData):
     try:
-        # Fetch stored face encoding and user data
+        cnx, cursor = get_db()
         cursor.execute("SELECT face_encoding, role, password FROM voters_base WHERE voter_id = %s", (data.voter_id,))
         user_data = cursor.fetchone()
 
@@ -271,7 +305,6 @@ async def face_login(data: FaceData):
         role = user_data[1]
         password = user_data[2]
 
-        # Decode the live image
         image_b64 = data.image
         if ',' in image_b64:
             image_b64 = image_b64.split(',')[1]
@@ -279,12 +312,10 @@ async def face_login(data: FaceData):
         image_bytes = base64.b64decode(image_b64)
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
-        # Save to a temp file for DeepFace
         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
             image.save(tmp, format='JPEG')
             tmp_path = tmp.name
 
-        # Extract live face encoding using DeepFace
         try:
             live_embeddings = DeepFace.represent(img_path=tmp_path, model_name='Facenet', enforce_detection=True)
         except ValueError:
@@ -297,15 +328,17 @@ async def face_login(data: FaceData):
 
         live_encoding = numpy.array(live_embeddings[0]['embedding'])
 
-        # Compare faces using cosine distance (threshold 0.40 for Facenet model)
         cosine_distance = numpy.dot(stored_encoding, live_encoding) / (
             numpy.linalg.norm(stored_encoding) * numpy.linalg.norm(live_encoding)
         )
-        is_match = cosine_distance > 0.60  # cosine similarity threshold
+        is_match = cosine_distance > 0.60
 
         if is_match:
-            # Generate JWT — identical structure to /login
-            token = jwt.encode({'password': password, 'voter_id': data.voter_id, 'role': role}, os.environ['SECRET_KEY'], algorithm='HS256')
+            token = jwt.encode(
+                {'password': password, 'voter_id': data.voter_id, 'role': role},
+                os.environ['SECRET_KEY'],
+                algorithm='HS256'
+            )
             return {"token": token, "role": role}
         else:
             raise HTTPException(status_code=401, detail="Face authentication failed")
@@ -315,5 +348,3 @@ async def face_login(data: FaceData):
     except Exception as e:
         print(f"Error in face login: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# ── Face Recognition Endpoints End ──

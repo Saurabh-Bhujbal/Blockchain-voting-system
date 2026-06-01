@@ -1,20 +1,17 @@
 // import "../css/style.css"
 
 function getBackendUrl() {
-  // Check URL query parameters for override
   const urlParams = new URLSearchParams(window.location.search);
   const backendParam = urlParams.get('backend');
   if (backendParam) {
     localStorage.setItem('backendUrl', backendParam);
   }
-
   const saved = localStorage.getItem('backendUrl');
-  if (saved) return saved.replace(/\/$/, ""); // Strip trailing slash
+  if (saved) return saved.replace(/\/$/, "");
+  // ── PRODUCTION: Use deployed Render backend ──
+  return "https://blockchain-voting-system-2-hkad.onrender.com";
+} 
 
-  // Dynamic fallback based on hostname
-  const hostIp = (window.location.hostname === '192.168.137.1') ? '192.168.137.1' : '127.0.0.1';
-  return `http://${hostIp}:8000`;
-}
 
 const Web3 = require('web3');
 const contract = require('@truffle/contract');
@@ -426,12 +423,14 @@ window.App = {
 }
 
 window.addEventListener("load", function() {
-  if (typeof web3 !== "undefined") {
-    console.warn("Using web3 detected from external source like Metamask")
+  if (window.ethereum) {
+    console.warn("Using web3 detected from external source like MetaMask")
     window.eth = new Web3(window.ethereum)
   } else {
-    console.warn("No web3 detected. Falling back to http://192.168.137.1:9545.")
-    window.eth = new Web3(new Web3.providers.HttpProvider(`http://${window.location.hostname === '192.168.137.1' ? '192.168.137.1' : '127.0.0.1'}:9545`))
+    console.warn("No web3 detected. Please install MetaMask.")
+    alert("MetaMask not detected! Please install MetaMask and connect to Sepolia network.")
+    return;
   }
   window.App.eventStart()
 })
+
