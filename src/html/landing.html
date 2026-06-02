@@ -819,15 +819,27 @@
       transform: translateY(0);
     }
 
-    /* â”€â”€â”€ Divider â”€â”€â”€ */
+    /* ─── Divider ─── */
     .gold-divider {
       height: 1px;
       background: linear-gradient(90deg, transparent, var(--border), transparent);
       margin: 0 auto;
       max-width: 800px;
     }
+    
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--white);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 10px;
+      position: relative;
+      z-index: 1001;
+    }
 
-    /* â”€â”€â”€ Responsive â”€â”€â”€ */
+    /* ─── Responsive ─── */
     @media (max-width: 900px) {
       .tech-grid {
         grid-template-columns: 1fr;
@@ -927,16 +939,6 @@
       }
       .portal-card { padding: 30px 20px; }
       .portal-icon-wrap { width: 100px; height: 100px; font-size: 40px; }
-    }
-    
-    .mobile-menu-btn {
-      display: none;
-      background: none;
-      border: none;
-      color: var(--white);
-      font-size: 24px;
-      cursor: pointer;
-      padding: 10px;
     }
   </style>
 </head>
