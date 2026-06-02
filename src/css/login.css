@@ -377,14 +377,29 @@ legend {
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
 .form-row-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
-@media (max-width: 640px) {
+
+@media (max-width: 768px) {
+  .login-card { padding: 30px 24px; }
+  .login-brand h1 { font-size: 24px; }
+  .login-panel { max-width: 100%; padding: 0 10px; }
+  .tile-grid { grid-template-columns: 1fr; }
+  .data-table th, .data-table td { padding: 12px 10px; font-size: 13px; }
+  .top-bar { padding: 14px 20px; flex-direction: column; gap: 12px; }
+}
+
+@media (max-width: 480px) {
   .form-row-2 { grid-template-columns: 1fr; }
-  .top-bar { padding: 14px 20px; }
+  .btn { padding: 10px 18px; font-size: 13px; }
+  .card { padding: 24px 16px; }
+  .webcam-container, #face-login-preview, #face-preview { width: 100% !important; height: auto !important; max-width: 300px; aspect-ratio: 4/3; }
 }
 
 /* ============================================================

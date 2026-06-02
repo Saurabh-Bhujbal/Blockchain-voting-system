@@ -71,6 +71,7 @@ body {
   align-items: center;
   gap: 14px;
   text-decoration: none;
+  flex-shrink: 0;
 }
 
 .brand-emblem {
@@ -107,6 +108,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .nav-links a {
@@ -226,9 +229,37 @@ footer {
   border-radius: 100px;
 }
 
-@media (max-width: 900px) {
+/* ─── Responsive Media Queries ─── */
+@media (max-width: 1024px) {
+  .footer-top { grid-template-columns: 1.5fr 1fr 1fr; gap: 40px; }
+}
+
+@media (max-width: 768px) {
+  .navbar { 
+    height: auto; 
+    min-height: 70px;
+    padding: 12px 20px;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .brand-text h1 { font-size: 15px; }
+  .brand-text p { font-size: 9px; }
+  .nav-links { 
+    width: 100%;
+    justify-content: center; 
+    display: flex; /* Keep visible on mobile, just re-flow */
+  }
+  .nav-links a { padding: 6px 12px; font-size: 13px; }
+  
   .footer-top { grid-template-columns: 1fr; gap: 40px; }
   .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
-  .navbar { padding: 0 20px; }
-  .nav-links { display: none; } /* Hide on very small screens for now unless expanded */
+}
+
+@media (max-width: 480px) {
+  .navbar { padding: 12px 15px; }
+  .brand-emblem { width: 36px; height: 36px; font-size: 16px; }
+  .glass-container { padding: 24px 16px; }
+  
+  footer { padding: 40px 20px 20px; }
+  .footer-badges { flex-wrap: wrap; justify-content: center; }
 }

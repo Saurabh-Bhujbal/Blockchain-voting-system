@@ -550,16 +550,24 @@
   .stats-bar { flex-wrap: wrap; gap: 0; border-radius: 12px; }
   .stat-item { padding: 14px 16px; min-width: 100px; }
   .result-row {
-    grid-template-columns: 32px 44px 1fr 80px;
-    gap: 10px;
-    padding: 14px 16px;
+    grid-template-columns: 24px 40px 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px 12px;
+    padding: 12px;
   }
+  .result-rank { grid-row: 1 / span 2; min-width: auto; }
+  .result-logo { grid-row: 1 / span 2; }
+  .result-info { grid-column: 3; }
+  .result-votes { grid-column: 3; text-align: left; }
   .result-bar-col { display: none; }
-  .winner-card { flex-wrap: wrap; }
-  .winner-votes { font-size: 30px; }
+  .winner-card { flex-wrap: wrap; padding: 20px 16px; }
+  .winner-votes { font-size: 28px; }
+  .results-hero-title { font-size: 28px; }
+  .election-selector { min-width: 100%; }
 }
 
 @media (max-width: 480px) {
-  .nav-actions { gap: 8px; }
+  .nav-actions { gap: 8px; flex-wrap: wrap; }
   .btn-refresh span { display: none; }
+  .results-table-header { padding: 20px 16px 16px; flex-direction: column; align-items: flex-start; gap: 10px; }
 }

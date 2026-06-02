@@ -64,3 +64,9 @@
   color: var(--text-muted);
   font-family: monospace;
 }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-wrap { padding: 24px 16px 40px; }
+  #voteButton { max-width: 100%; }
+}
