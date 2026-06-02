@@ -9,7 +9,10 @@ require('dotenv').config();
 
 // ── Helper: Clean SECRET_KEY robustly ──
 function getCleanSecretKey() {
-  let key = (process.env.SECRET_KEY || "").trim().replace(/^["']|["']$/g, "");
+  let key = (process.env.SECRET_KEY || "").trim();
+  // If the user accidentally pasted "SECRET_KEY=" or "SECRET_KEY = " in the value field:
+  key = key.replace(/^SECRET_KEY\s*=\s*/, '');
+  key = key.replace(/^["']|["']$/g, "");
   // Remove any non-ASCII invisible characters (BOM, ZWNBSP, NBSP, etc.)
   key = key.replace(/[^\x20-\x7E]/g, '');
   return key;

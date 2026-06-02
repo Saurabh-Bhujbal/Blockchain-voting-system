@@ -131,6 +131,8 @@ async def health():
 def get_clean_secret_key():
     """Get SECRET_KEY with aggressive cleaning of invisible characters."""
     raw = os.environ.get('SECRET_KEY', '')
+    # If the user accidentally pasted "SECRET_KEY=" or "SECRET_KEY = " in the value field:
+    raw = re.sub(r'^SECRET_KEY\s*=\s*', '', raw)
     # Strip whitespace, quotes, BOM, zero-width chars, non-breaking spaces
     cleaned = raw.strip().strip("'").strip('"')
     # Remove any non-ASCII invisible characters (BOM, ZWNBSP, NBSP, etc.)
