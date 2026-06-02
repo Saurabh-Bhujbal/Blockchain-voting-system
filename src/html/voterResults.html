@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Election Results â€” Voter Portal</title>
+  <title>Election Results - Voter Portal</title>
   <meta name="description" content="Election results fetched directly from the Ethereum smart contract.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src * data: blob: 'unsafe-inline'; connect-src * 'unsafe-inline' 'unsafe-eval';">
   <link rel="stylesheet" href="../css/theme.css">
@@ -52,17 +52,17 @@
       <!-- Summary Stats Bar -->
       <div class="stats-bar" id="statsBar">
         <div class="stat-item">
-          <span class="stat-value" id="totalCandidates">â€”</span>
+          <span class="stat-value" id="totalCandidates">-</span>
           <span class="stat-label">Candidates</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <span class="stat-value" id="totalVotes">â€”</span>
+          <span class="stat-value" id="totalVotes">-</span>
           <span class="stat-label">Total Votes</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
-          <span class="stat-value" id="leadingCandidate">â€”</span>
+          <span class="stat-value" id="leadingCandidate">-</span>
           <span class="stat-label">Winner</span>
         </div>
       </div>
@@ -78,8 +78,8 @@
       <div class="winner-logo-wrap" id="winnerLogo"></div>
       <div class="winner-info">
         <p class="winner-label">Election Winner</p>
-        <h2 class="winner-name" id="winnerName">â€”</h2>
-        <p class="winner-party" id="winnerParty">â€”</p>
+        <h2 class="winner-name" id="winnerName">-</h2>
+        <p class="winner-party" id="winnerParty">-</p>
       </div>
       <div class="winner-votes-wrap">
         <span class="winner-votes" id="winnerVotes">0</span>
@@ -90,7 +90,7 @@
     <!-- Loading State -->
     <div class="results-loading" id="resultsLoading">
       <div class="results-loading-spinner"></div>
-      <p>Fetching final results from the blockchainâ€¦</p>
+      <p>Fetching final results from the blockchain</p>
     </div>
 
     <!-- Results Table Card -->
@@ -209,7 +209,7 @@
       // Update stats bar
       document.getElementById('totalCandidates').textContent = candidates.length;
       document.getElementById('totalVotes').textContent = totalVotes.toLocaleString();
-      document.getElementById('leadingCandidate').textContent = candidates[0]?.name || 'â€”';
+      document.getElementById('leadingCandidate').textContent = candidates[0]?.name || '-';
 
       // Winner spotlight
       if (candidates.length > 0 && totalVotes > 0) {
