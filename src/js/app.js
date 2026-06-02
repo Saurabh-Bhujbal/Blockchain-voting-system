@@ -1,5 +1,3 @@
-// import "../css/style.css"
-
 function getBackendUrl() {
   const urlParams = new URLSearchParams(window.location.search);
   const backendParam = urlParams.get('backend');
@@ -12,35 +10,36 @@ function getBackendUrl() {
   return "https://blockchain-voting-system-2-hkad.onrender.com";
 } 
 
-
-const Web3 = require('web3');
-const contract = require('@truffle/contract');
-
-const votingArtifacts = require('../../build/contracts/Voting.json');
-var VotingContract = contract(votingArtifacts)
+function getVoterIdFromToken() {
+  let auth = new URLSearchParams(window.location.search).get('Authorization');
+  if (!auth) {
+    const localToken = localStorage.getItem('jwtTokenVoter') || localStorage.getItem('jwtTokenAdmin');
+    if (localToken) auth = 'Bearer ' + localToken;
+  }
+  if (!auth) return null;
+  const token = auth.replace('Bearer ', '').trim();
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload).voter_id;
+  } catch (e) {
+    return null;
+  }
+}
 
 window.App = {
-  account: null,
-  instance: null,
+  voterId: null,
   currentElectionId: null,
 
   eventStart: async function() { 
     try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const account = accounts[0];
-      
-      VotingContract.setProvider(window.ethereum);
-      VotingContract.defaults({
-        from: account,
-        gas: 6654755
-      });
-
-      // Load account data
-      App.account = account;
-      $("#accountAddress").html("Your Account: " + account);
-      
-      App.instance = await VotingContract.deployed();
-      console.log("Contract deployed instance found");
+      App.voterId = getVoterIdFromToken();
+      if (App.voterId) {
+        $("#accountAddress").html("Your Voter ID: " + App.voterId);
+      }
       
       const path = window.location.pathname;
       const isAdmin = path.includes("admin.html") || path.includes("addCandidate.html") || path.includes("viewResults.html");
@@ -58,8 +57,9 @@ window.App = {
         const electionId = urlParams.get('electionId');
         if (electionId) {
           App.currentElectionId = electionId;
-          const electionData = await App.instance.getElection(electionId);
-          $("#electionNameDisplay").text(electionData[1]);
+          const res = await fetch(`${getBackendUrl()}/blockchain/election/${electionId}`);
+          const electionData = await res.json();
+          $("#electionNameDisplay").text(electionData.name);
           await App.loadCandidates(electionId);
         }
       } else if (path.includes("index.html") || path === "/") {
@@ -102,11 +102,24 @@ window.App = {
         $('.btn-submit-content').hide();
         $('.btn-submit-loader').show();
 
-        // 1. Submit the blockchain transaction and wait for Metamask confirmation
-        const tx = await App.instance.addCandidate(App.currentElectionId, nameCandidate, partyCandidate);
-        console.log("Blockchain transaction successful:", tx);
+        // 1. Submit the blockchain transaction via backend API
+        const txRes = await fetch(`${getBackendUrl()}/blockchain/add-candidate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            electionId: parseInt(App.currentElectionId),
+            name: nameCandidate,
+            party: partyCandidate
+          })
+        });
+        
+        if (!txRes.ok) {
+          const err = await txRes.json();
+          throw new Error(err.detail || "Failed to add candidate on blockchain");
+        }
+        console.log("Blockchain transaction successful");
 
-        // 2. Upload the logo to the dynamic backend host (avoiding Mixed Content block where possible)
+        // 2. Upload the logo to the dynamic backend host
         const formData = new FormData();
         formData.append('candidateName', nameCandidate);
         formData.append('logo', logoFile);
@@ -119,7 +132,7 @@ window.App = {
           const data = await res.json();
           console.log('Logo upload response:', data);
         } catch (uploadErr) {
-          console.error("Logo upload failed, but MetaMask transaction was confirmed:", uploadErr);
+          console.error("Logo upload failed, but transaction was confirmed:", uploadErr);
         }
 
         // 3. Display success status message
@@ -127,7 +140,6 @@ window.App = {
         if (typeof showStatusFn === 'function') {
           showStatusFn('addMsg', 'success', 'Successfully added the candidate!');
         } else {
-          // Fallback status indicator if showStatus isn't globally exposed
           const el = document.getElementById('addMsg');
           if (el) {
             el.className = 'status-msg status-success';
@@ -164,7 +176,7 @@ window.App = {
 
       } catch (err) {
         console.error("Add Candidate error:", err);
-        alert("Error adding candidate. Check console.");
+        alert("Error adding candidate: " + err.message);
         $('.btn-submit-content').show();
         $('.btn-submit-loader').hide();
       }
@@ -187,7 +199,21 @@ window.App = {
         }
 
         console.log("Adding election:", electionName);
-        await App.instance.addElection(electionName, startDate, endDate);
+        const res = await fetch(`${getBackendUrl()}/blockchain/add-election`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: electionName,
+            startDate: startDate,
+            endDate: endDate
+          })
+        });
+        
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Failed to add election");
+        }
+        
         console.log("Election added successfully");
         window.location.reload();
       } catch (err) {
@@ -200,18 +226,16 @@ window.App = {
     $(document).on('change', '#electionSelector', async function() {
       App.currentElectionId = $(this).val();
       if (App.currentElectionId) {
-        // Fetch the election details to check if it has ended
-        const data = await App.instance.getElection(App.currentElectionId);
-        const endDate = data[3].toNumber() * 1000; // convert BigNumber to ms
+        const res = await fetch(`${getBackendUrl()}/blockchain/election/${App.currentElectionId}`);
+        const data = await res.json();
+        const endDate = data.endDate * 1000; // convert to ms
         const now = Date.now();
         const electionEnded = now > endDate;
 
-        // Hide the "select election" prompt, show the candidate area
         $('#noElectionPrompt').hide();
         $('#candidateArea').show();
 
         if (electionEnded) {
-          // Election over — disable Register Candidate button and show notice
           $('.btn-register-candidate').prop('disabled', true).attr('title', 'Election has ended. Cannot register new candidates.');
           $('#electionEndedNotice').show();
         } else {
@@ -239,7 +263,8 @@ window.App = {
   },
 
   loadElectionsDropdown: async function(dropdownId) {
-    const count = await App.instance.getElectionsCount();
+    const res = await fetch(`${getBackendUrl()}/blockchain/elections-count`);
+    const { count } = await res.json();
     const $select = $(`#${dropdownId}`);
     $select.empty();
     
@@ -250,13 +275,15 @@ window.App = {
 
     $select.append('<option value="" disabled selected>-- Select an Election --</option>');
     for (let i = 1; i <= count; i++) {
-      const data = await App.instance.getElection(i);
-      $select.append(`<option value="${data[0]}">${data[1]}</option>`);
+      const eRes = await fetch(`${getBackendUrl()}/blockchain/election/${i}`);
+      const data = await eRes.json();
+      $select.append(`<option value="${data.id}">${data.name}</option>`);
     }
   },
 
   loadElectionsGrid: async function() {
-    const count = await App.instance.getElectionsCount();
+    const res = await fetch(`${getBackendUrl()}/blockchain/elections-count`);
+    const { count } = await res.json();
     const $grid = $("#electionsGrid");
     const $pastGrid = $("#pastElectionsGrid");
     $grid.empty();
@@ -266,11 +293,12 @@ window.App = {
     let pastCount = 0;
 
     for (let i = 1; i <= count; i++) {
-      const data = await App.instance.getElection(i);
-      const id = data[0].toNumber();
-      const name = data[1];
-      const endDateMs = data[3].toNumber() * 1000;
-      const start = new Date(data[2].toNumber() * 1000).toDateString();
+      const eRes = await fetch(`${getBackendUrl()}/blockchain/election/${i}`);
+      const data = await eRes.json();
+      const id = data.id;
+      const name = data.name;
+      const endDateMs = data.endDate * 1000;
+      const start = new Date(data.startDate * 1000).toDateString();
       const end = new Date(endDateMs).toDateString();
       
       const isPast = Date.now() > endDateMs;
@@ -320,9 +348,10 @@ window.App = {
     $("#votingView").show();
     
     // Fetch dates
-    const data = await App.instance.getElection(electionId);
-    const start = new Date(data[2].toNumber() * 1000).toDateString();
-    const end = new Date(data[3].toNumber() * 1000).toDateString();
+    const res = await fetch(`${getBackendUrl()}/blockchain/election/${electionId}`);
+    const data = await res.json();
+    const start = new Date(data.startDate * 1000).toDateString();
+    const end = new Date(data.endDate * 1000).toDateString();
     $("#dates").text(`${start} - ${end}`);
 
     await App.loadCandidates(electionId);
@@ -333,27 +362,38 @@ window.App = {
     console.log("Fetching candidates for election", electionId, "...");
     
     try {
-      const countCandidates = await App.instance.getCandidatesCount(electionId);
-      const voted = await App.instance.checkVote(electionId);
+      const cRes = await fetch(`${getBackendUrl()}/blockchain/candidates-count/${electionId}`);
+      const { count: countCandidates } = await cRes.json();
+      
+      let voted = false;
+      if (App.voterId) {
+        const vRes = await fetch(`${getBackendUrl()}/blockchain/check-vote/${electionId}/${App.voterId}`);
+        const vData = await vRes.json();
+        voted = vData.hasVoted;
+      }
       
       const path = window.location.pathname;
       const isAdmin = path.includes("admin.html") || path.includes("addCandidate.html") || path.includes("viewResults.html");
       const isResultsPage = path.includes("viewResults.html") || path.includes("voterResults.html");
       
-      const electionData = await App.instance.getElection(electionId);
-      const endDate = electionData[3].toNumber() * 1000;
+      const eRes = await fetch(`${getBackendUrl()}/blockchain/election/${electionId}`);
+      const electionData = await eRes.json();
+      const endDate = electionData.endDate * 1000;
       const electionEnded = Date.now() > endDate;
       
       for (let i = 1; i <= countCandidates; i++) {
-        const data = await App.instance.getCandidate(electionId, i);
-        var id = data[0];
-        var name = data[1];
-        var party = data[2];
-        var voteCount = data[3];
+        const candRes = await fetch(`${getBackendUrl()}/blockchain/candidate/${electionId}/${i}`);
+        const data = await candRes.json();
+        
+        var id = data.id;
+        var name = data.name;
+        var party = data.party;
+        var voteCount = data.voteCount;
         
         var backendUrl = getBackendUrl();
-        var logoHtml = `<img src="${backendUrl}/logos/${logoName}.png" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
-        logoHtml += `<img src="${backendUrl}/logos/${logoName}.jpg" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
+        var sanitizedName = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        var logoHtml = `<img src="${backendUrl}/logos/${sanitizedName}.png" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
+        logoHtml += `<img src="${backendUrl}/logos/${sanitizedName}.jpg" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
         
         var actionContent = "";
         if (isAdmin || isResultsPage) {
@@ -375,16 +415,20 @@ window.App = {
           $(".vote-btn").attr("disabled", true);
           let extraMsg = "";
           if (voted) {
-            const choiceId = await App.instance.getVoterChoice(electionId, App.account);
-            const choiceData = await App.instance.getCandidate(electionId, choiceId);
-            extraMsg = `<br><span style="color:#10b981;">Your Confirmed Vote: ${choiceData[1]} (${choiceData[2]})</span>`;
+            const vcRes = await fetch(`${getBackendUrl()}/blockchain/voter-choice/${electionId}/${App.voterId}`);
+            const { candidateId } = await vcRes.json();
+            const choiceRes = await fetch(`${getBackendUrl()}/blockchain/candidate/${electionId}/${candidateId}`);
+            const choiceData = await choiceRes.json();
+            extraMsg = `<br><span style="color:#10b981;">Your Confirmed Vote: ${choiceData.name} (${choiceData.party})</span>`;
           }
           $("#voteStatus").html(`<i class="fa-solid fa-clock"></i> Voting is closed. The election period has ended.${extraMsg}`).css("color", "#ef4444").show();
         } else if (voted) {
           $(".vote-btn").attr("disabled", true);
-          const choiceId = await App.instance.getVoterChoice(electionId, App.account);
-          const choiceData = await App.instance.getCandidate(electionId, choiceId);
-          $("#voteStatus").html("Vote Confirmed! You voted for: " + choiceData[1] + " (" + choiceData[2] + ")").css("color", "#10b981").show();
+          const vcRes = await fetch(`${getBackendUrl()}/blockchain/voter-choice/${electionId}/${App.voterId}`);
+          const { candidateId } = await vcRes.json();
+          const choiceRes = await fetch(`${getBackendUrl()}/blockchain/candidate/${electionId}/${candidateId}`);
+          const choiceData = await choiceRes.json();
+          $("#voteStatus").html("Vote Confirmed! You voted for: " + choiceData.name + " (" + choiceData.party + ")").css("color", "#10b981").show();
         } else {
           $("#voteStatus").hide();
         }
@@ -394,7 +438,7 @@ window.App = {
     }
   },
 
-  vote: function(candidateID) {    
+  vote: async function(candidateID) {    
     if (!App.currentElectionId) {
       alert("No election selected.");
       return;
@@ -403,34 +447,43 @@ window.App = {
       $("#msg").html("<p class='text-danger'>Invalid candidate selection.</p>")
       return
     }
+    if (!App.voterId) {
+      alert("Voter Identity not found. Please log in again.");
+      return;
+    }
     
     $(".vote-btn").attr("disabled", true);
     $("#msg").html("<p class='text-primary'>Processing vote... Please wait.</p>");
 
-    App.instance.vote(App.currentElectionId, parseInt(candidateID)).then(function(result){
+    try {
+      const res = await fetch(`${getBackendUrl()}/blockchain/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          electionId: parseInt(App.currentElectionId),
+          candidateId: parseInt(candidateID),
+          voterId: App.voterId
+        })
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Voting failed");
+      }
+      
       $("#msg").html("<p class='text-success'>Vote cast successfully!</p>");
-      App.loadCandidates(App.currentElectionId); // Reload candidates for this election
-    }).catch(function(err){ 
+      App.loadCandidates(App.currentElectionId);
+    } catch (err) {
       console.error("ERROR! " + err.message);
-      var cleanErr = err.message.replace("RPC submit: VM Exception while processing transaction: revert ", "");
-      $("#msg").html("<p class='text-danger'>Error: " + cleanErr + "</p>");
-      alert("Voting Failed:\n" + cleanErr);
-      if (!err.message.includes("voted")) {
+      $("#msg").html("<p class='text-danger'>Error: " + err.message + "</p>");
+      alert("Voting Failed:\n" + err.message);
+      if (!err.message.toLowerCase().includes("voted")) {
         $(".vote-btn").attr("disabled", false);
       }
-    });
+    }
   }
 }
 
 window.addEventListener("load", function() {
-  if (window.ethereum) {
-    console.warn("Using web3 detected from external source like MetaMask")
-    window.eth = new Web3(window.ethereum)
-  } else {
-    console.warn("No web3 detected. Please install MetaMask.")
-    alert("MetaMask not detected! Please install MetaMask and connect to Sepolia network.")
-    return;
-  }
   window.App.eventStart()
 })
-

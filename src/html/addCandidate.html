@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Manage Candidates — Election Commission Admin</title>
+  <title>Manage Candidates â€” Election Commission Admin</title>
   <meta name="description" content="Admin panel to add and manage election candidates on the Ethereum blockchain.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: http://192.168.137.1:8000 http://127.0.0.1:8000 http://localhost:8000; connect-src 'self' http://192.168.137.1:8000 http://192.168.137.1:7545 http://192.168.137.1:8545 http://127.0.0.1:8000 http://127.0.0.1:7545 http://127.0.0.1:8545 http://localhost:8000 http://localhost:7545 http://localhost:8545;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src * data: blob: 'unsafe-inline'; connect-src * 'unsafe-inline' 'unsafe-eval';">
   <link rel="stylesheet" href="../css/theme.css">
   <link rel="stylesheet" href="../css/admin.css">
   <link rel="stylesheet" href="../css/manage.css">
@@ -39,9 +39,9 @@
     </div>
   </nav>
 
-  <!-- ══════════════════════════════════════
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        MODALS
-  ══════════════════════════════════════ -->
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div class="modal-backdrop" id="modalBackdrop" onclick="closeAllModals()"></div>
 
   <!-- 1. Register Candidate Modal -->
@@ -100,7 +100,7 @@
           </span>
           <span class="btn-submit-loader" style="display:none;">
             <i class="fa-solid fa-spinner fa-spin"></i>
-            Adding…
+            Addingâ€¦
           </span>
         </button>
       </div>
@@ -128,7 +128,7 @@
         </div>
         <div class="dates-status" id="currentDates">
           <i class="fa-solid fa-circle-info"></i>
-          <span id="dates">Fetching current dates…</span>
+          <span id="dates">Fetching current datesâ€¦</span>
         </div>
         <div class="form-row-2 mt-16">
           <div class="form-field mb-0">
@@ -161,15 +161,15 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        PAGE CONTENT
-  ══════════════════════════════════════ -->
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div class="manage-layout">
     <!-- Main Column: Candidate List (Now single column layout) -->
     <main class="candidates-panel">
       <div class="candidates-header">
         <div>
-          <p class="page-eyebrow">Admin · Candidate Registry</p>
+          <p class="page-eyebrow">Admin Â· Candidate Registry</p>
           <div style="display:flex; align-items:center; gap: 12px; margin-top: 8px;">
             <select id="electionSelector" class="election-selector">
               <option value="" disabled selected>Loading elections...</option>
@@ -200,7 +200,7 @@
         <p>Please select an election from the dropdown above to view and manage candidates.</p>
       </div>
 
-      <!-- All candidate content wrapped — hidden until election selected -->
+      <!-- All candidate content wrapped â€” hidden until election selected -->
       <div id="candidateArea" style="display:none;">
 
         <!-- Election ended notice -->
@@ -212,7 +212,7 @@
         <!-- Loading state -->
         <div class="loading-state" id="candidatesLoading" style="display:none;">
           <div class="loading-spinner"></div>
-          <p>Loading candidates from blockchain…</p>
+          <p>Loading candidates from blockchainâ€¦</p>
         </div>
 
         <!-- Empty state -->
@@ -229,7 +229,7 @@
         <!-- Candidate cards grid -->
         <div class="candidate-grid" id="candidateGrid"></div>
 
-        <!-- Hidden table — populated by app.js via #boxCandidate -->
+        <!-- Hidden table â€” populated by app.js via #boxCandidate -->
         <div style="display:none;">
           <table><tbody id="boxCandidate"></tbody></table>
         </div>
@@ -241,7 +241,7 @@
   <footer>
     <div class="footer-inner">
       <div class="footer-bottom" style="justify-content:center;">
-        <p>© 2024 Election Commission. All rights reserved. Powered by Ethereum Blockchain & FastAPI.</p>
+        <p>Â© 2024 Election Commission. All rights reserved. Powered by Ethereum Blockchain & FastAPI.</p>
       </div>
     </div>
   </footer>
@@ -249,7 +249,7 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="../dist/app.bundle.js" type="module"></script>
   <script>
-    /* ── Auth / Navigation ── */
+    /* â”€â”€ Auth / Navigation â”€â”€ */
     let auth = new URLSearchParams(window.location.search).get('Authorization');
     if (!auth) {
       const localToken = localStorage.getItem('jwtTokenAdmin');
@@ -269,7 +269,7 @@
       window.location.href = '/adminLogin.html';
     }
 
-    /* ── Modal Open / Close ── */
+    /* â”€â”€ Modal Open / Close â”€â”€ */
     function openModal(modalId) {
       document.getElementById('modalBackdrop').classList.add('active');
       document.getElementById(modalId).classList.add('active');
@@ -291,7 +291,7 @@
       if (e.key === 'Escape') closeAllModals();
     });
 
-    /* ── Logo Upload & Preview ── */
+    /* â”€â”€ Logo Upload & Preview â”€â”€ */
     const dropZone = document.getElementById('dropZone');
     const logoInput = document.getElementById('partyLogo');
 
@@ -332,7 +332,7 @@
 
 
 
-    /* ── Status helper ── */
+    /* â”€â”€ Status helper â”€â”€ */
     function showStatus(elId, type, msg) {
       const el = document.getElementById(elId);
       el.className = 'status-msg status-' + type;
@@ -341,7 +341,7 @@
       setTimeout(() => { el.style.display = 'none'; }, 4000);
     }
 
-    /* ── Sync app.js #boxCandidate rows → visual card grid ── */
+    /* â”€â”€ Sync app.js #boxCandidate rows â†’ visual card grid â”€â”€ */
     function syncCandidateCards() {
       const tbody = document.getElementById('boxCandidate');
       const grid = document.getElementById('candidateGrid');

@@ -13,6 +13,7 @@ from mysql.connector import errorcode
 import jwt
 from pydantic import BaseModel
 import tempfile as tmp_module
+from blockchain_routes import router as blockchain_router
 
 # ── Face Recognition Imports (Lazy loaded) ──
 import base64
@@ -57,6 +58,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(blockchain_router)
 
 # Ensure logos directory exists
 LOGOS_DIR = os.path.join(os.path.dirname(__file__), "logos")
@@ -114,9 +117,20 @@ def get_db():
 
 # Initial connection on startup
 try:
-    get_db()
+    cnx, cursor = get_db()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS votes (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            voter_id VARCHAR(255) NOT NULL,
+            election_id INT NOT NULL,
+            candidate_id INT NOT NULL,
+            UNIQUE KEY unique_vote (voter_id, election_id)
+        )
+    """)
+    cnx.commit()
+    print("Database tables verified/created successfully ✅")
 except Exception as e:
-    print(f"Initial DB connection failed: {e}")
+    print(f"Initial DB connection/setup failed: {e}")
 
 # ── FIX 3: Health Endpoint for Cron Job ──
 @app.get("/health")
