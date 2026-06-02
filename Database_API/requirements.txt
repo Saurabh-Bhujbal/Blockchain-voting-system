@@ -8,3 +8,5 @@ bcrypt
 numpy
 Pillow
 python-multipart
+web3
+eth-account
