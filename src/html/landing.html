@@ -861,17 +861,40 @@
         text-align: center;
       }
 
+      /* Navbar Mobile Menu Updates */
       .navbar {
         padding: 0 20px;
+        justify-content: space-between;
+        align-items: center;
+        flex-direction: row;
       }
 
       .nav-links {
-        gap: 0;
+        display: none !important; /* hidden by default on mobile */
+        flex-direction: column;
+        width: 100%;
+        background: rgba(11, 19, 43, 0.98);
+        position: absolute;
+        top: 70px;
+        left: 0;
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      }
+      
+      .nav-links.active {
+        display: flex !important;
       }
 
       .nav-links a {
-        padding: 8px 10px;
-        font-size: 13px;
+        padding: 12px 20px;
+        font-size: 15px;
+        width: 100%;
+        text-align: center;
+      }
+      
+      .mobile-menu-btn {
+        display: flex;
       }
     }
 
@@ -893,6 +916,22 @@
         border-bottom: 1px solid var(--border);
         padding-bottom: 20px;
       }
+      
+      .hero-title {
+        font-size: clamp(28px, 8vw, 40px);
+      }
+      .portal-card { padding: 30px 20px; }
+      .portal-icon-wrap { width: 100px; height: 100px; font-size: 40px; }
+    }
+    
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--white);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 10px;
     }
   </style>
 </head>
@@ -913,7 +952,10 @@
         <p>Blockchain Secure Voting Portal</p>
       </div>
     </a>
-    <div class="nav-links">
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="nav-links" id="navLinks">
       <a href="/landing.html">Home</a>
       <a href="/about.html">About ECI</a>
       <a href="/voter_services.html">Voter Services</a>
@@ -1248,6 +1290,22 @@
       } else {
         navbar.style.background = 'rgba(6,11,26,0.92)';
         navbar.style.borderBottomColor = 'rgba(197, 165, 66,0.2)';
+      }
+    });
+
+    // Mobile Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const navLinks = document.getElementById('navLinks');
+    
+    mobileMenuBtn.addEventListener('click', () => {
+      navLinks.classList.toggle('active');
+      const icon = mobileMenuBtn.querySelector('i');
+      if (navLinks.classList.contains('active')) {
+        icon.classList.remove('fa-bars');
+        icon.classList.add('fa-xmark');
+      } else {
+        icon.classList.remove('fa-xmark');
+        icon.classList.add('fa-bars');
       }
     });
   </script>
