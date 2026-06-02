@@ -17,6 +17,13 @@ registerForm.addEventListener('submit', (event) => {
   const name = document.getElementById('name').value;
   const voter_id = document.getElementById('voter-id').value;
   const password = document.getElementById('password').value;
+  const submitBtn = document.getElementById('regBtn');
+
+  // Disable button during request
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Creating Account...';
+  }
 
   if (msgDiv) msgDiv.innerHTML = "Creating account...";
 
@@ -70,6 +77,11 @@ registerForm.addEventListener('submit', (event) => {
     console.error('Registration failed:', error.message);
     if (msgDiv) {
       msgDiv.innerHTML = `<p style="color: #ef4444; margin-top: 10px;">${error.message}</p>`;
+    }
+    // Re-enable button on error
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Register Account →';
     }
   });
 });

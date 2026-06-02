@@ -42,9 +42,28 @@ export const FaceRecognition = {
     },
 
     // ── Internal: Stop all tracks of a media stream ──
-    _stopCamera: (stream) => {
+    _stopCamera: (stream, videoEl) => {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
+        }
+        // Stop the scanner-line animation so it doesn't keep scanning a black frame
+        if (videoEl) {
+            const scannerLine = videoEl.parentElement?.querySelector('.scanner-line');
+            if (scannerLine) {
+                scannerLine.style.animationPlayState = 'paused';
+                scannerLine.style.opacity = '0';
+            }
+        }
+    },
+
+    // ── Internal: Reset scanner line animation for next use ──
+    _resetScanner: (videoEl) => {
+        if (videoEl) {
+            const scannerLine = videoEl.parentElement?.querySelector('.scanner-line');
+            if (scannerLine) {
+                scannerLine.style.animationPlayState = 'running';
+                scannerLine.style.opacity = '1';
+            }
         }
     },
 
@@ -71,6 +90,11 @@ export const FaceRecognition = {
             const descriptorArray = await new Promise((resolve, reject) => {
                 const handler = async () => {
                     captureBtn.removeEventListener('click', handler);
+                    // Disable button during processing
+                    if (captureBtn) {
+                        captureBtn.disabled = true;
+                        captureBtn.textContent = '⏳ Detecting face...';
+                    }
                     if (statusEl) statusEl.textContent = "Detecting face and extracting features...";
                     try {
                         const detection = await faceapi.detectSingleFace(videoEl)
@@ -78,6 +102,11 @@ export const FaceRecognition = {
                             .withFaceDescriptor();
                         
                         if (!detection) {
+                            // Re-enable button on failure so user can retry
+                            if (captureBtn) {
+                                captureBtn.disabled = false;
+                                captureBtn.textContent = '📸 Capture & Register Face';
+                            }
                             throw new Error("No face detected. Please ensure your face is clearly visible in the camera and try again.");
                         }
                         resolve(Array.from(detection.descriptor));
@@ -96,8 +125,8 @@ export const FaceRecognition = {
                 loadingOverlay.classList.add('active');
             }
 
-            // Stop camera after capture
-            FaceRecognition._stopCamera(stream);
+            // Stop camera after capture (also stops scanner animation)
+            FaceRecognition._stopCamera(stream, videoEl);
             stream = null;
 
             if (statusEl) statusEl.textContent = "Uploading face data to server...";
@@ -116,12 +145,17 @@ export const FaceRecognition = {
 
             return result;
         } catch (err) {
-            if (stream) FaceRecognition._stopCamera(stream);
+            if (stream) FaceRecognition._stopCamera(stream, videoEl);
             console.error("Face registration failed:", err);
             throw err;
         } finally {
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('active');
+            }
+            // Re-enable capture button
+            if (captureBtn) {
+                captureBtn.disabled = false;
+                captureBtn.textContent = '📸 Capture & Register Face';
             }
         }
     },
@@ -149,6 +183,11 @@ export const FaceRecognition = {
             const descriptorArray = await new Promise((resolve, reject) => {
                 const handler = async () => {
                     captureBtn.removeEventListener('click', handler);
+                    // Disable button during processing
+                    if (captureBtn) {
+                        captureBtn.disabled = true;
+                        captureBtn.textContent = '⏳ Verifying face...';
+                    }
                     if (statusEl) statusEl.textContent = "Detecting face and verifying...";
                     try {
                         const detection = await faceapi.detectSingleFace(videoEl)
@@ -156,6 +195,11 @@ export const FaceRecognition = {
                             .withFaceDescriptor();
                         
                         if (!detection) {
+                            // Re-enable button on failure so user can retry
+                            if (captureBtn) {
+                                captureBtn.disabled = false;
+                                captureBtn.textContent = '📸 Capture & Verify Face';
+                            }
                             throw new Error("No face detected. Please ensure your face is clearly visible in the camera and try again.");
                         }
                         resolve(Array.from(detection.descriptor));
@@ -174,8 +218,8 @@ export const FaceRecognition = {
                 loadingOverlay.classList.add('active');
             }
 
-            // Stop camera after capture
-            FaceRecognition._stopCamera(stream);
+            // Stop camera after capture (also stops scanner animation)
+            FaceRecognition._stopCamera(stream, videoEl);
             stream = null;
 
             if (statusEl) statusEl.textContent = "Verifying facial features...";
@@ -194,12 +238,17 @@ export const FaceRecognition = {
 
             return result;
         } catch (err) {
-            if (stream) FaceRecognition._stopCamera(stream);
+            if (stream) FaceRecognition._stopCamera(stream, videoEl);
             console.error("Face login failed:", err);
             throw err;
         } finally {
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('active');
+            }
+            // Re-enable capture button
+            if (captureBtn) {
+                captureBtn.disabled = false;
+                captureBtn.textContent = '📸 Capture & Verify Face';
             }
         }
     }

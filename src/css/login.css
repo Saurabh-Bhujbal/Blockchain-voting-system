@@ -523,6 +523,7 @@ legend {
   animation: biometricScan 2.5s infinite linear;
   pointer-events: none;
   z-index: 10;
+  transition: opacity 0.4s ease;
 }
 
 .loading-overlay {

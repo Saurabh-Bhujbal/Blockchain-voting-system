@@ -314,12 +314,12 @@ async def face_login(data: FaceData):
         stored_encoding = numpy.array(json.loads(user_data[0]))
         live_encoding = numpy.array(data.face_encoding)
 
-        # Compute cosine similarity
-        cosine_distance = numpy.dot(stored_encoding, live_encoding) / (
-            numpy.linalg.norm(stored_encoding) * numpy.linalg.norm(live_encoding)
-        )
-        # Cosine similarity > 0.60 matches
-        is_match = cosine_distance > 0.60
+        # Compute Euclidean distance (face-api.js standard metric)
+        # Threshold < 0.6 = same person, > 0.6 = different person
+        euclidean_distance = float(numpy.linalg.norm(stored_encoding - live_encoding))
+        is_match = euclidean_distance < 0.6
+
+        print(f"DEBUG: Face match for {data.voter_id} — Euclidean distance: {euclidean_distance:.4f}, Match: {is_match}")
 
         if is_match:
             print(f"DEBUG: Signing JWT. Key length: {len(secret_key)}, SHA256: {key_sha256}")

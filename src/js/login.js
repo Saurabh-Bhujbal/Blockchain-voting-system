@@ -22,6 +22,13 @@ loginForm.addEventListener('submit', (event) => {
   const voter_id = document.getElementById('voter-id').value;
   const password = document.getElementById('password').value;
   const token = voter_id;
+  const submitBtn = loginForm.querySelector('button[type="submit"]');
+
+  // Disable button during request
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Verifying...';
+  }
 
   if (msgDiv) msgDiv.innerHTML = "Authenticating...";
 
@@ -58,6 +65,11 @@ loginForm.addEventListener('submit', (event) => {
     console.error('Login failed:', error.message);
     if (msgDiv) {
       msgDiv.innerHTML = `<p style="color: #ef4444; margin-top: 10px;">${error.message}</p>`;
+    }
+    // Re-enable button on error
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Verify Credentials →';
     }
   });
 });
