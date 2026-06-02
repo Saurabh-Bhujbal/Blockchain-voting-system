@@ -3,6 +3,7 @@ import dotenv
 import os
 import shutil
 import re
+import hashlib
 import mysql.connector
 from fastapi import FastAPI, HTTPException, status, Request, File, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
@@ -125,6 +126,30 @@ async def health():
         return {"status": "alive", "database": "connected"}
     except:
         return {"status": "alive", "database": "disconnected"}
+
+# ── Helper: Clean SECRET_KEY robustly ──
+def get_clean_secret_key():
+    """Get SECRET_KEY with aggressive cleaning of invisible characters."""
+    raw = os.environ.get('SECRET_KEY', '')
+    # Strip whitespace, quotes, BOM, zero-width chars, non-breaking spaces
+    cleaned = raw.strip().strip("'").strip('"')
+    # Remove any non-ASCII invisible characters (BOM, ZWNBSP, NBSP, etc.)
+    cleaned = re.sub(r'[^\x20-\x7E]', '', cleaned)
+    return cleaned
+
+# ── Debug: Key fingerprint endpoint ──
+@app.get("/debug/key-check")
+async def debug_key_check():
+    """Returns SHA256 fingerprint of the SECRET_KEY so you can compare with Node.js."""
+    key = get_clean_secret_key()
+    key_hash = hashlib.sha256(key.encode('utf-8')).hexdigest()
+    return {
+        "key_length": len(key),
+        "key_prefix": key[:5] if key else "",
+        "key_suffix": key[-5:] if key else "",
+        "key_sha256": key_hash,
+        "simulated_face_auth": os.environ.get('SIMULATED_FACE_AUTH', 'false')
+    }
 
 # Define the authentication middleware
 async def authenticate(request: Request):
@@ -328,13 +353,14 @@ async def face_login(data: FaceData):
         image_bytes = base64.b64decode(image_b64)
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
 
-        secret_key = os.environ.get('SECRET_KEY', '').strip().strip("'").strip('"')
+        secret_key = get_clean_secret_key()
+        key_sha256 = hashlib.sha256(secret_key.encode('utf-8')).hexdigest()
 
         if is_simulated:
             print("SIMULATED_FACE_AUTH: Bypassing face match checks")
-            print(f"DEBUG: Signing JWT. Key length: {len(secret_key)}, Starts with: \"{secret_key[:5]}...\", Ends with: \"...{secret_key[-5:]}\"")
+            print(f"DEBUG: Signing JWT. Key length: {len(secret_key)}, SHA256: {key_sha256}")
             token = jwt.encode(
-                {'password': password, 'voter_id': data.voter_id, 'role': role},
+                {'voter_id': data.voter_id, 'role': role},
                 secret_key,
                 algorithm='HS256'
             )
@@ -343,7 +369,8 @@ async def face_login(data: FaceData):
                 "role": role,
                 "debug_backend_key_length": len(secret_key),
                 "debug_backend_key_prefix": secret_key[:5] if secret_key else "",
-                "debug_backend_key_suffix": secret_key[-5:] if secret_key else ""
+                "debug_backend_key_suffix": secret_key[-5:] if secret_key else "",
+                "debug_backend_key_sha256": key_sha256
             }
 
         # Normal mode: Import heavy dependencies lazily
@@ -374,9 +401,9 @@ async def face_login(data: FaceData):
         is_match = cosine_distance > 0.60
 
         if is_match:
-            print(f"DEBUG: Signing JWT. Key length: {len(secret_key)}, Starts with: \"{secret_key[:5]}...\", Ends with: \"...{secret_key[-5:]}\"")
+            print(f"DEBUG: Signing JWT. Key length: {len(secret_key)}, SHA256: {key_sha256}")
             token = jwt.encode(
-                {'password': password, 'voter_id': data.voter_id, 'role': role},
+                {'voter_id': data.voter_id, 'role': role},
                 secret_key,
                 algorithm='HS256'
             )
@@ -385,7 +412,8 @@ async def face_login(data: FaceData):
                 "role": role,
                 "debug_backend_key_length": len(secret_key),
                 "debug_backend_key_prefix": secret_key[:5] if secret_key else "",
-                "debug_backend_key_suffix": secret_key[-5:] if secret_key else ""
+                "debug_backend_key_suffix": secret_key[-5:] if secret_key else "",
+                "debug_backend_key_sha256": key_sha256
             }
         else:
             raise HTTPException(status_code=401, detail="Face authentication failed")

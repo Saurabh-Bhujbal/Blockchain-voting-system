@@ -3,8 +3,18 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
+const crypto = require('crypto');
 
 require('dotenv').config();
+
+// ── Helper: Clean SECRET_KEY robustly ──
+function getCleanSecretKey() {
+  let key = (process.env.SECRET_KEY || "").trim().replace(/^["']|["']$/g, "");
+  // Remove any non-ASCII invisible characters (BOM, ZWNBSP, NBSP, etc.)
+  key = key.replace(/[^\x20-\x7E]/g, '');
+  return key;
+}
+
 
 // Multer config — save logos to src/assets/logos/
 const logoStorage = multer.diskStorage({
@@ -47,13 +57,15 @@ const authorizeUser = (req, res, next) => {
   }
   
   try {
-    const secretKey = (process.env.SECRET_KEY || "").trim().replace(/^["']|["']$/g, "");
-    console.log(`DEBUG: Verifying JWT. Key length: ${secretKey.length}, Starts with: "${secretKey.substring(0, 5)}...", Ends with: "...${secretKey.slice(-5)}"`);
+    const secretKey = getCleanSecretKey();
+    const keyHash = crypto.createHash('sha256').update(secretKey).digest('hex');
+    console.log(`DEBUG: Verifying JWT. Key length: ${secretKey.length}, SHA256: ${keyHash}`);
     const decodedToken = jwt.verify(token, secretKey, { algorithms: ['HS256'] });
     req.user = decodedToken;
     next(); 
   } catch (error) {
-    const secretKey = (process.env.SECRET_KEY || "").trim().replace(/^["']|["']$/g, "");
+    const secretKey = getCleanSecretKey();
+    const keyHash = crypto.createHash('sha256').update(secretKey).digest('hex');
     console.error("JWT Verification failed:", error.message);
     return res.status(401).json({
       message: 'Invalid authorization token',
@@ -62,6 +74,7 @@ const authorizeUser = (req, res, next) => {
         keyLength: secretKey.length,
         keyPrefix: secretKey.substring(0, 5),
         keySuffix: secretKey.slice(-5),
+        keySha256: keyHash,
         tokenLength: (token || "").length,
         tokenPrefix: (token || "").substring(0, 15),
         decodedPayload: jwt.decode(token)
@@ -141,6 +154,18 @@ app.get('/js/adminRegister.js', (req, res) => {
   return res.status(403).json({ error: 'Forbidden', message: 'Admin registration is disabled.' });
 });
 // ── Admin Registration Block END ──
+
+// ── Debug: Key fingerprint endpoint ──
+app.get('/debug/key-check', (req, res) => {
+  const secretKey = getCleanSecretKey();
+  const keyHash = crypto.createHash('sha256').update(secretKey).digest('hex');
+  res.json({
+    key_length: secretKey.length,
+    key_prefix: secretKey.substring(0, 5),
+    key_suffix: secretKey.slice(-5),
+    key_sha256: keyHash
+  });
+});
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'src/html/landing.html'));
