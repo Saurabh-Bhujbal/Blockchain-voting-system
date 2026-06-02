@@ -5,9 +5,6 @@ mysql-connector-python
 PyJWT
 pydantic
 bcrypt
-tensorflow-cpu
-tf-keras
-deepface
 numpy
 Pillow
 python-multipart

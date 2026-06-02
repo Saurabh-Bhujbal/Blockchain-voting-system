@@ -270,62 +270,24 @@ async def upload_logo(candidateName: str = Form(...), logo: UploadFile = File(..
         raise HTTPException(status_code=500, detail="Failed to upload logo")
 
 # Face Recognition Pydantic Model
+from typing import List
+
 class FaceData(BaseModel):
     voter_id: str
-    image: str
+    face_encoding: List[float]
 
-# POST /face/register — encode and store a voter's face
+# POST /face/register — store a voter's face descriptor
 @app.post("/face/register")
 async def face_register(data: FaceData):
     try:
-        # Check if we are running in simulated authentication mode
-        is_simulated = os.environ.get("SIMULATED_FACE_AUTH", "false").lower() == "true"
-
-        image_b64 = data.image
-        if ',' in image_b64:
-            image_b64 = image_b64.split(',')[1]
-
-        image_bytes = base64.b64decode(image_b64)
-        image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-
-        if is_simulated:
-            # Simulated mode: save a mock 128-element embedding vector
-            print("SIMULATED_FACE_AUTH: Generating mock face encoding")
-            mock_encoding = [0.0] * 128
-            encoding_json = json.dumps(mock_encoding)
-            
-            cnx, cursor = get_db()
-            cursor.execute("UPDATE voters_base SET face_encoding = %s WHERE voter_id = %s", (encoding_json, data.voter_id))
-            cnx.commit()
-            return {"status": "Face registered successfully"}
-
-        # Normal mode: Import heavy dependencies lazily to avoid startup crashes
-        from deepface import DeepFace
-        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-            image.save(tmp, format='JPEG')
-            tmp_path = tmp.name
-
-        try:
-            embeddings = DeepFace.represent(img_path=tmp_path, model_name='Facenet', enforce_detection=True)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="No face detected")
-        finally:
-            os.unlink(tmp_path)
-
-        if not embeddings:
-            raise HTTPException(status_code=400, detail="No face detected")
-
-        encoding = embeddings[0]['embedding']
-        encoding_json = json.dumps(encoding)
-
+        # Directly store the client-side computed 128-float array
+        encoding_json = json.dumps(data.face_encoding)
+        
         cnx, cursor = get_db()
         cursor.execute("UPDATE voters_base SET face_encoding = %s WHERE voter_id = %s", (encoding_json, data.voter_id))
         cnx.commit()
-
         return {"status": "Face registered successfully"}
 
-    except HTTPException:
-        raise
     except Exception as e:
         print(f"Error in face registration: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -335,9 +297,6 @@ async def face_register(data: FaceData):
 @app.post("/face/login")
 async def face_login(data: FaceData):
     try:
-        # Check if we are running in simulated authentication mode
-        is_simulated = os.environ.get("SIMULATED_FACE_AUTH", "false").lower() == "true"
-
         cnx, cursor = get_db()
         cursor.execute("SELECT face_encoding, role, password FROM voters_base WHERE voter_id = %s", (data.voter_id,))
         user_data = cursor.fetchone()
@@ -348,58 +307,18 @@ async def face_login(data: FaceData):
         role = user_data[1]
         password = user_data[2]
 
-        image_b64 = data.image
-        if ',' in image_b64:
-            image_b64 = image_b64.split(',')[1]
-
-        image_bytes = base64.b64decode(image_b64)
-        image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-
         secret_key = get_clean_secret_key()
         key_sha256 = hashlib.sha256(secret_key.encode('utf-8')).hexdigest()
 
-        if is_simulated:
-            print("SIMULATED_FACE_AUTH: Bypassing face match checks")
-            print(f"DEBUG: Signing JWT. Key length: {len(secret_key)}, SHA256: {key_sha256}")
-            token = jwt.encode(
-                {'voter_id': data.voter_id, 'role': role},
-                secret_key,
-                algorithm='HS256'
-            )
-            return {
-                "token": token,
-                "role": role,
-                "debug_backend_key_length": len(secret_key),
-                "debug_backend_key_prefix": secret_key[:5] if secret_key else "",
-                "debug_backend_key_suffix": secret_key[-5:] if secret_key else "",
-                "debug_backend_key_sha256": key_sha256
-            }
-
-        # Normal mode: Import heavy dependencies lazily
         import numpy
-        from deepface import DeepFace
-        
         stored_encoding = numpy.array(json.loads(user_data[0]))
+        live_encoding = numpy.array(data.face_encoding)
 
-        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-            image.save(tmp, format='JPEG')
-            tmp_path = tmp.name
-
-        try:
-            live_embeddings = DeepFace.represent(img_path=tmp_path, model_name='Facenet', enforce_detection=True)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="No face detected in image")
-        finally:
-            os.unlink(tmp_path)
-
-        if not live_embeddings:
-            raise HTTPException(status_code=400, detail="No face detected in image")
-
-        live_encoding = numpy.array(live_embeddings[0]['embedding'])
-
+        # Compute cosine similarity
         cosine_distance = numpy.dot(stored_encoding, live_encoding) / (
             numpy.linalg.norm(stored_encoding) * numpy.linalg.norm(live_encoding)
         )
+        # Cosine similarity > 0.60 matches
         is_match = cosine_distance > 0.60
 
         if is_match:
