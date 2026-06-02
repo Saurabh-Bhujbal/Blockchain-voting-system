@@ -888,17 +888,20 @@
         background: rgba(11, 19, 43, 0.98);
         position: fixed;
         top: 0;
-        right: -260px; /* Hidden off-screen by default */
+        right: 0;
+        transform: translateX(100%); /* Hidden off-screen */
+        visibility: hidden; /* Fully disabled when closed */
         padding: 80px 20px 20px;
         border-left: 1px solid var(--border);
         box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-        transition: right 0.3s ease;
+        transition: transform 0.3s ease, visibility 0.3s ease;
         z-index: 1000;
         display: flex !important;
       }
       
       .nav-links.active {
-        right: 0;
+        transform: translateX(0);
+        visibility: visible;
       }
 
       .nav-links a {
