@@ -79,6 +79,15 @@ export const FaceRecognition = {
         let loadingOverlay = null;
 
         try {
+            // Disable button during initialization
+            if (captureBtn) {
+                captureBtn.disabled = true;
+                captureBtn.textContent = '⏳ Initializing...';
+            }
+
+            // Reset scanner for retry scenarios
+            FaceRecognition._resetScanner(videoEl);
+
             // Load models first
             await FaceRecognition._loadModels(statusEl);
 
@@ -86,11 +95,17 @@ export const FaceRecognition = {
             stream = await FaceRecognition._startCamera(videoEl);
             if (statusEl) statusEl.textContent = "Camera ready. Position your face and click Capture.";
 
+            // Enable capture button once camera is ready
+            if (captureBtn) {
+                captureBtn.disabled = false;
+                captureBtn.textContent = '📸 Capture & Register Face';
+            }
+
             // Wait for user to click capture button and extract descriptor
             const descriptorArray = await new Promise((resolve, reject) => {
                 const handler = async () => {
                     captureBtn.removeEventListener('click', handler);
-                    // Disable button during processing
+                    // Disable button immediately to prevent double-clicks
                     if (captureBtn) {
                         captureBtn.disabled = true;
                         captureBtn.textContent = '⏳ Detecting face...';
@@ -102,11 +117,6 @@ export const FaceRecognition = {
                             .withFaceDescriptor();
                         
                         if (!detection) {
-                            // Re-enable button on failure so user can retry
-                            if (captureBtn) {
-                                captureBtn.disabled = false;
-                                captureBtn.textContent = '📸 Capture & Register Face';
-                            }
                             throw new Error("No face detected. Please ensure your face is clearly visible in the camera and try again.");
                         }
                         resolve(Array.from(detection.descriptor));
@@ -129,6 +139,12 @@ export const FaceRecognition = {
             FaceRecognition._stopCamera(stream, videoEl);
             stream = null;
 
+            // Keep button disabled during server request
+            if (captureBtn) {
+                captureBtn.disabled = true;
+                captureBtn.textContent = '⏳ Uploading to server...';
+            }
+
             if (statusEl) statusEl.textContent = "Uploading face data to server...";
 
             const response = await fetch(`${getBackendUrl()}/face/register`, {
@@ -139,24 +155,35 @@ export const FaceRecognition = {
 
             const result = await response.json();
 
+            // Remove loading overlay once response is received
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+
             if (!response.ok) {
                 throw new Error(result.error || result.detail || 'Face registration failed');
+            }
+
+            // Success — show success state
+            if (captureBtn) {
+                captureBtn.disabled = true;
+                captureBtn.textContent = '✅ Face Registered!';
             }
 
             return result;
         } catch (err) {
             if (stream) FaceRecognition._stopCamera(stream, videoEl);
-            console.error("Face registration failed:", err);
-            throw err;
-        } finally {
+            // Remove loading overlay on error
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('active');
             }
-            // Re-enable capture button
+            // Show failure state on button
             if (captureBtn) {
-                captureBtn.disabled = false;
-                captureBtn.textContent = '📸 Capture & Register Face';
+                captureBtn.disabled = true;
+                captureBtn.textContent = '❌ Registration Failed';
             }
+            console.error("Face registration failed:", err);
+            throw err;
         }
     },
 
@@ -172,6 +199,15 @@ export const FaceRecognition = {
         let loadingOverlay = null;
 
         try {
+            // Disable button during initialization
+            if (captureBtn) {
+                captureBtn.disabled = true;
+                captureBtn.textContent = '⏳ Initializing...';
+            }
+
+            // Reset scanner for retry scenarios
+            FaceRecognition._resetScanner(videoEl);
+
             // Load models first
             await FaceRecognition._loadModels(statusEl);
 
@@ -179,11 +215,17 @@ export const FaceRecognition = {
             stream = await FaceRecognition._startCamera(videoEl);
             if (statusEl) statusEl.textContent = "Camera ready. Position your face and click Capture.";
 
+            // Enable capture button once camera is ready
+            if (captureBtn) {
+                captureBtn.disabled = false;
+                captureBtn.textContent = '📸 Capture & Verify Face';
+            }
+
             // Wait for user to click capture button and extract descriptor
             const descriptorArray = await new Promise((resolve, reject) => {
                 const handler = async () => {
                     captureBtn.removeEventListener('click', handler);
-                    // Disable button during processing
+                    // Disable button immediately to prevent double-clicks
                     if (captureBtn) {
                         captureBtn.disabled = true;
                         captureBtn.textContent = '⏳ Verifying face...';
@@ -195,11 +237,6 @@ export const FaceRecognition = {
                             .withFaceDescriptor();
                         
                         if (!detection) {
-                            // Re-enable button on failure so user can retry
-                            if (captureBtn) {
-                                captureBtn.disabled = false;
-                                captureBtn.textContent = '📸 Capture & Verify Face';
-                            }
                             throw new Error("No face detected. Please ensure your face is clearly visible in the camera and try again.");
                         }
                         resolve(Array.from(detection.descriptor));
@@ -222,6 +259,12 @@ export const FaceRecognition = {
             FaceRecognition._stopCamera(stream, videoEl);
             stream = null;
 
+            // Keep button disabled during server request
+            if (captureBtn) {
+                captureBtn.disabled = true;
+                captureBtn.textContent = '⏳ Sending to server...';
+            }
+
             if (statusEl) statusEl.textContent = "Verifying facial features...";
 
             const response = await fetch(`${getBackendUrl()}/face/login`, {
@@ -232,24 +275,36 @@ export const FaceRecognition = {
 
             const result = await response.json();
 
+            // Remove loading overlay once response is received
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+
             if (!response.ok) {
                 throw new Error(result.error || result.detail || 'Face authentication failed');
+            }
+
+            // Success — keep button disabled (page will redirect)
+            if (captureBtn) {
+                captureBtn.disabled = true;
+                captureBtn.textContent = '✅ Verified!';
             }
 
             return result;
         } catch (err) {
             if (stream) FaceRecognition._stopCamera(stream, videoEl);
-            console.error("Face login failed:", err);
-            throw err;
-        } finally {
+            // Remove loading overlay on error
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('active');
             }
-            // Re-enable capture button
+            // Keep button disabled — the caller (login.js) will show a retry button
+            // which re-invokes this whole flow from scratch
             if (captureBtn) {
-                captureBtn.disabled = false;
-                captureBtn.textContent = '📸 Capture & Verify Face';
+                captureBtn.disabled = true;
+                captureBtn.textContent = '❌ Verification Failed';
             }
+            console.error("Face login failed:", err);
+            throw err;
         }
     }
 };
