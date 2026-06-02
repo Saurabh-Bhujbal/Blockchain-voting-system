@@ -110,6 +110,21 @@ async function initFaceVerification() {
       retryBtn.onclick = () => {
         retryBtn.style.display = 'none';
         if (msgDiv) msgDiv.innerHTML = '';
+
+        // Reset all face-login UI for a clean retry
+        const captureBtn = document.getElementById('faceLoginCaptureBtn');
+        if (captureBtn) {
+          captureBtn.disabled = false;
+          captureBtn.textContent = '📸 Capture & Verify Face';
+        }
+        const loadingOverlay = document.querySelector('#face-login-loading');
+        if (loadingOverlay) loadingOverlay.classList.remove('active');
+        const faceStatus = document.getElementById('face-login-status');
+        if (faceStatus) faceStatus.textContent = '';
+
+        // Ensure the processing flag is clear for the new attempt
+        FaceRecognition._processing = false;
+
         initFaceVerification();
       };
     }

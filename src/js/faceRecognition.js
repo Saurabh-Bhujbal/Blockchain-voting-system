@@ -11,6 +11,38 @@ export const FaceRecognition = {
     _modelsLoaded: false,
     _processing: false,
 
+    // ── Internal: Wait until video element has actual frame data ──
+    _waitForVideoReady: (videoEl, timeoutMs = 5000) => {
+        return new Promise((resolve, reject) => {
+            const start = Date.now();
+            const check = () => {
+                if (videoEl.readyState >= 2 && videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+                    resolve();
+                } else if (Date.now() - start > timeoutMs) {
+                    reject(new Error('Camera timed out. Please try again.'));
+                } else {
+                    requestAnimationFrame(check);
+                }
+            };
+            check();
+        });
+    },
+
+    // ── Internal: Attempt face detection with retries ──
+    _detectFaceWithRetries: async (videoEl, maxAttempts = 3, delayMs = 500) => {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            const detection = await faceapi.detectSingleFace(videoEl)
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+            if (detection) return detection;
+            if (attempt < maxAttempts) {
+                console.log(`Face detection attempt ${attempt}/${maxAttempts} found nothing, retrying...`);
+                await new Promise(r => setTimeout(r, delayMs));
+            }
+        }
+        return null;
+    },
+
     // ── Internal: Load face-api.js models from CDN ──
     _loadModels: async (statusEl) => {
         if (FaceRecognition._modelsLoaded) return;
@@ -32,9 +64,20 @@ export const FaceRecognition = {
     // ── Internal: Start webcam and attach to video element ──
     _startCamera: async (videoElement) => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            // Clear any previous stream to ensure clean re-initialization
+            if (videoElement.srcObject) {
+                videoElement.srcObject.getTracks().forEach(t => t.stop());
+                videoElement.srcObject = null;
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+            });
             videoElement.srcObject = stream;
             await videoElement.play();
+
+            // Wait for the video to actually have frame data
+            await FaceRecognition._waitForVideoReady(videoElement);
 
             // Start scanner-line animation once camera is active
             if (videoElement) {
@@ -55,6 +98,10 @@ export const FaceRecognition = {
     _stopCamera: (stream, videoEl) => {
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
+        }
+        // Clear the srcObject so re-initialization works cleanly
+        if (videoEl) {
+            videoEl.srcObject = null;
         }
         // Stop the scanner-line animation so it doesn't keep scanning a black frame
         if (videoEl) {
@@ -126,9 +173,10 @@ export const FaceRecognition = {
                     }
 
                     try {
-                        const detection = await faceapi.detectSingleFace(videoEl)
-                            .withFaceLandmarks()
-                            .withFaceDescriptor();
+                        // Ensure video is still ready before detection
+                        await FaceRecognition._waitForVideoReady(videoEl, 3000);
+
+                        const detection = await FaceRecognition._detectFaceWithRetries(videoEl, 3, 600);
                         
                         if (!detection) {
                             throw new Error("No face detected. Please ensure your face is clearly visible in the camera and try again.");
@@ -258,9 +306,10 @@ export const FaceRecognition = {
                     }
 
                     try {
-                        const detection = await faceapi.detectSingleFace(videoEl)
-                            .withFaceLandmarks()
-                            .withFaceDescriptor();
+                        // Ensure video is still ready before detection
+                        await FaceRecognition._waitForVideoReady(videoEl, 3000);
+
+                        const detection = await FaceRecognition._detectFaceWithRetries(videoEl, 3, 600);
                         
                         if (!detection) {
                             throw new Error("No face detected. Please ensure your face is clearly visible in the camera and try again.");

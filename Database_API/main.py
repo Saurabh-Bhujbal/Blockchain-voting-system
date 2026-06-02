@@ -314,10 +314,20 @@ async def face_login(data: FaceData):
         stored_encoding = numpy.array(json.loads(user_data[0]))
         live_encoding = numpy.array(data.face_encoding)
 
+        print(f"DEBUG: Stored encoding length: {len(stored_encoding)}, Live encoding length: {len(live_encoding)}")
+        print(f"DEBUG: Stored encoding sample (first 5): {stored_encoding[:5]}")
+        print(f"DEBUG: Live encoding sample (first 5): {live_encoding[:5]}")
+
+        # Verify both encodings are valid 128-element arrays
+        if len(stored_encoding) != 128 or len(live_encoding) != 128:
+            print(f"WARNING: Encoding length mismatch! Stored={len(stored_encoding)}, Live={len(live_encoding)}. Expected 128.")
+            raise HTTPException(status_code=400, detail=f"Face data format mismatch. Please re-register your face. (stored={len(stored_encoding)}, live={len(live_encoding)})")
+
         # Compute Euclidean distance (face-api.js standard metric)
-        # Threshold < 0.6 = same person, > 0.6 = different person
+        # Threshold < 0.65 = same person, > 0.65 = different person
+        # Using 0.65 instead of 0.6 to allow for real-world webcam variability
         euclidean_distance = float(numpy.linalg.norm(stored_encoding - live_encoding))
-        is_match = euclidean_distance < 0.6
+        is_match = euclidean_distance < 0.65
 
         print(f"DEBUG: Face match for {data.voter_id} — Euclidean distance: {euclidean_distance:.4f}, Match: {is_match}")
 
