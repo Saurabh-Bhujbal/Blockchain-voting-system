@@ -9,6 +9,7 @@ import { getBackendUrl } from './config.js';
 export const FaceRecognition = {
 
     _modelsLoaded: false,
+    _processing: false,
 
     // ── Internal: Load face-api.js models from CDN ──
     _loadModels: async (statusEl) => {
@@ -34,6 +35,15 @@ export const FaceRecognition = {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             videoElement.srcObject = stream;
             await videoElement.play();
+
+            // Start scanner-line animation once camera is active
+            if (videoElement) {
+                const scannerLine = videoElement.parentElement?.querySelector('.scanner-line');
+                if (scannerLine) {
+                    scannerLine.style.animationPlayState = 'running';
+                    scannerLine.style.opacity = '1';
+                }
+            }
             return stream;
         } catch (err) {
             console.error("Camera access failed:", err);
@@ -56,24 +66,22 @@ export const FaceRecognition = {
         }
     },
 
-    // ── Internal: Reset scanner line animation for next use ──
-    _resetScanner: (videoEl) => {
-        if (videoEl) {
-            const scannerLine = videoEl.parentElement?.querySelector('.scanner-line');
-            if (scannerLine) {
-                scannerLine.style.animationPlayState = 'running';
-                scannerLine.style.opacity = '1';
-            }
-        }
-    },
-
     // ── Register a voter's face ──
     register: async (voterId, opts = {}) => {
+        if (FaceRecognition._processing) {
+            console.warn("FaceRecognition register already in progress.");
+            return;
+        }
+        FaceRecognition._processing = true;
+
         const videoEl = document.getElementById(opts.videoId || 'face-preview');
         const statusEl = document.getElementById(opts.statusId || 'face-status');
         const captureBtn = document.getElementById(opts.captureBtnId || 'faceCaptureBtn');
 
-        if (!videoEl) throw new Error("Face preview element not found");
+        if (!videoEl) {
+            FaceRecognition._processing = false;
+            throw new Error("Face preview element not found");
+        }
 
         let stream = null;
         let loadingOverlay = null;
@@ -84,9 +92,6 @@ export const FaceRecognition = {
                 captureBtn.disabled = true;
                 captureBtn.textContent = '⏳ Initializing...';
             }
-
-            // Reset scanner for retry scenarios
-            FaceRecognition._resetScanner(videoEl);
 
             // Load models first
             await FaceRecognition._loadModels(statusEl);
@@ -111,6 +116,15 @@ export const FaceRecognition = {
                         captureBtn.textContent = '⏳ Detecting face...';
                     }
                     if (statusEl) statusEl.textContent = "Detecting face and extracting features...";
+
+                    // Show loading overlay immediately to give visual feedback
+                    loadingOverlay = videoEl.parentElement.querySelector('.loading-overlay');
+                    const loadingText = videoEl.parentElement.querySelector('.loading-text-biometric');
+                    if (loadingOverlay) {
+                        if (loadingText) loadingText.textContent = "Detecting Face...";
+                        loadingOverlay.classList.add('active');
+                    }
+
                     try {
                         const detection = await faceapi.detectSingleFace(videoEl)
                             .withFaceLandmarks()
@@ -127,19 +141,14 @@ export const FaceRecognition = {
                 captureBtn.addEventListener('click', handler);
             });
 
-            // Show loading overlay
-            loadingOverlay = videoEl.parentElement.querySelector('.loading-overlay');
-            const loadingText = videoEl.parentElement.querySelector('.loading-text-biometric');
-            if (loadingOverlay) {
-                if (loadingText) loadingText.textContent = "Registering Face...";
-                loadingOverlay.classList.add('active');
-            }
-
             // Stop camera after capture (also stops scanner animation)
             FaceRecognition._stopCamera(stream, videoEl);
             stream = null;
 
-            // Keep button disabled during server request
+            // Update loading text and button text during server request
+            const loadingText = videoEl.parentElement.querySelector('.loading-text-biometric');
+            if (loadingText) loadingText.textContent = "Registering Face...";
+
             if (captureBtn) {
                 captureBtn.disabled = true;
                 captureBtn.textContent = '⏳ Uploading to server...';
@@ -184,16 +193,27 @@ export const FaceRecognition = {
             }
             console.error("Face registration failed:", err);
             throw err;
+        } finally {
+            FaceRecognition._processing = false;
         }
     },
 
     // ── Login with face recognition ──
     login: async (voterId) => {
+        if (FaceRecognition._processing) {
+            console.warn("FaceRecognition login already in progress.");
+            return;
+        }
+        FaceRecognition._processing = true;
+
         const videoEl = document.getElementById('face-login-preview');
         const statusEl = document.getElementById('face-login-status');
         const captureBtn = document.getElementById('faceLoginCaptureBtn');
 
-        if (!videoEl) throw new Error("Face login preview element not found");
+        if (!videoEl) {
+            FaceRecognition._processing = false;
+            throw new Error("Face login preview element not found");
+        }
 
         let stream = null;
         let loadingOverlay = null;
@@ -204,9 +224,6 @@ export const FaceRecognition = {
                 captureBtn.disabled = true;
                 captureBtn.textContent = '⏳ Initializing...';
             }
-
-            // Reset scanner for retry scenarios
-            FaceRecognition._resetScanner(videoEl);
 
             // Load models first
             await FaceRecognition._loadModels(statusEl);
@@ -231,6 +248,15 @@ export const FaceRecognition = {
                         captureBtn.textContent = '⏳ Verifying face...';
                     }
                     if (statusEl) statusEl.textContent = "Detecting face and verifying...";
+
+                    // Show loading overlay immediately to give visual feedback
+                    loadingOverlay = videoEl.parentElement.querySelector('.loading-overlay');
+                    const loadingText = videoEl.parentElement.querySelector('.loading-text-biometric');
+                    if (loadingOverlay) {
+                        if (loadingText) loadingText.textContent = "Detecting Face...";
+                        loadingOverlay.classList.add('active');
+                    }
+
                     try {
                         const detection = await faceapi.detectSingleFace(videoEl)
                             .withFaceLandmarks()
@@ -247,19 +273,14 @@ export const FaceRecognition = {
                 captureBtn.addEventListener('click', handler);
             });
 
-            // Show loading overlay
-            loadingOverlay = videoEl.parentElement.querySelector('.loading-overlay');
-            const loadingText = videoEl.parentElement.querySelector('.loading-text-biometric');
-            if (loadingOverlay) {
-                if (loadingText) loadingText.textContent = "Verifying Face...";
-                loadingOverlay.classList.add('active');
-            }
-
             // Stop camera after capture (also stops scanner animation)
             FaceRecognition._stopCamera(stream, videoEl);
             stream = null;
 
-            // Keep button disabled during server request
+            // Update loading text and button text during server request
+            const loadingText = videoEl.parentElement.querySelector('.loading-text-biometric');
+            if (loadingText) loadingText.textContent = "Verifying features...";
+
             if (captureBtn) {
                 captureBtn.disabled = true;
                 captureBtn.textContent = '⏳ Sending to server...';
@@ -305,6 +326,8 @@ export const FaceRecognition = {
             }
             console.error("Face login failed:", err);
             throw err;
+        } finally {
+            FaceRecognition._processing = false;
         }
     }
 };
