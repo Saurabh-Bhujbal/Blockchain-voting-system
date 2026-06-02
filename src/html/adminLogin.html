@@ -37,7 +37,7 @@
       <div class="login-card">
         <p id="login-step-indicator" class="page-eyebrow" style="margin-bottom:18px;">Step 1 of 2: Enter administrator credentials</p>
 
-        <!-- â”€â”€ Step 1: Password Form â”€â”€ -->
+        <!-- Step 1: Password Form -->
         <form id="loginForm">
           <div class="form-field">
             <label for="voter-id">Admin ID</label>
@@ -45,12 +45,12 @@
           </div>
           <div class="form-field" style="margin-bottom:28px;">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required>
+            <input type="password" id="password" name="password" placeholder="********" required>
           </div>
-          <button type="submit" class="btn btn-primary btn-block">Verify Credentials â†’</button>
+          <button type="submit" class="btn btn-primary btn-block">Verify Credentials</button>
         </form>
 
-        <!-- â”€â”€ Step 2: Face Recognition Section (hidden until Step 1 passes) â”€â”€ -->
+        <!-- Step 2: Face Recognition Section (hidden until Step 1 passes) -->
         <div id="face-login-section" style="display:none; margin-top:20px; padding-top:20px; border-top:1px dashed var(--border);">
           <p class="page-eyebrow" style="text-align:center;">Face Verification</p>
           <div style="text-align:center; margin-bottom:15px;">
@@ -71,7 +71,7 @@
           </button>
           <p id="face-login-status" style="font-size:13px; color:var(--text-mid); text-align:center; margin-top:10px;"></p>
         </div>
-        <!-- â”€â”€ Face Recognition Section End â”€â”€ -->
+        <!-- Face Recognition Section End -->
 
         <div style="margin-top: 15px; border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 15px; text-align: center;">
           <a href="#" id="configBackendLink" style="font-size: 12px; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; opacity: 0.7; transition: opacity 0.2s;">
