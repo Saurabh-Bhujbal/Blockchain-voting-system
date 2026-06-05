@@ -97,10 +97,47 @@ window.App = {
           return;
         }
 
+        // ── Check candidate limit (max 15 including NOTA) ──
+        const countRes = await fetch(`${getBackendUrl()}/blockchain/candidates-count/${App.currentElectionId}`);
+        const { count: existingCount } = await countRes.json();
+        const MAX_CANDIDATES = 15; // 14 real + 1 NOTA
+        if (existingCount >= MAX_CANDIDATES) {
+          alert(`Maximum ${MAX_CANDIDATES} candidates (including NOTA) are allowed per election. Limit reached.`);
+          return;
+        }
+
         console.log("Adding candidate:", nameCandidate, "to election:", App.currentElectionId);
         
         $('.btn-submit-content').hide();
         $('.btn-submit-loader').show();
+
+        // ── If no candidates exist yet, auto-register NOTA first ──
+        if (existingCount === 0) {
+          console.log("Auto-registering NOTA as candidate #1...");
+          try {
+            const notaTx = await fetch(`${getBackendUrl()}/blockchain/add-candidate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                electionId: parseInt(App.currentElectionId),
+                name: 'NOTA',
+                party: 'None Of The Above'
+              })
+            });
+            if (notaTx.ok) {
+              // Upload a placeholder NOTA logo (SVG data-URI as a Blob)
+              const notaSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><rect width="64" height="64" rx="12" fill="#1a2540"/><text x="32" y="42" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#c5a542">NOTA</text></svg>`;
+              const blob = new Blob([notaSvg], { type: 'image/svg+xml' });
+              const notaForm = new FormData();
+              notaForm.append('candidateName', 'NOTA');
+              notaForm.append('logo', blob, 'nota.png');
+              await fetch(`${getBackendUrl()}/upload-logo`, { method: 'POST', body: notaForm }).catch(() => {});
+              console.log("NOTA registered successfully.");
+            }
+          } catch (notaErr) {
+            console.error("Could not auto-register NOTA:", notaErr);
+          }
+        }
 
         // 1. Submit the blockchain transaction via backend API
         const txRes = await fetch(`${getBackendUrl()}/blockchain/add-candidate`, {
@@ -392,8 +429,16 @@ window.App = {
         
         var backendUrl = getBackendUrl();
         var sanitizedName = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        var logoHtml = `<img src="${backendUrl}/logos/${sanitizedName}.png" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
-        logoHtml += `<img src="${backendUrl}/logos/${sanitizedName}.jpg" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);" onerror="this.style.display='none'">`;
+        // Use a single <img> with a JS fallback chain: .png → .jpg → SVG initials placeholder
+        // This prevents the logo from disappearing (onerror on both images caused both to hide).
+        var initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        var placeholderSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='8' fill='%231a2540'/%3E%3Ctext x='22' y='30' text-anchor='middle' font-family='sans-serif' font-size='14' font-weight='bold' fill='%23c5a542'%3E${encodeURIComponent(initials)}%3C/text%3E%3C/svg%3E`;
+        var logoHtml = `<img
+          src="${backendUrl}/logos/${sanitizedName}.png"
+          alt="${name}"
+          style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);"
+          onerror="if(this.dataset.tried==='png'){this.src='${placeholderSvg}';this.onerror=null;}else{this.dataset.tried='png';this.src='${backendUrl}/logos/${sanitizedName}.jpg';}"
+        >`;
         
         var actionContent = "";
         if (isAdmin || isResultsPage) {

@@ -182,7 +182,7 @@
         <div class="candidates-header-actions">
           <div class="candidate-count-badge" id="candidateCountBadge">
             <i class="fa-solid fa-users"></i>
-            <span id="candidateCount">0</span> candidates
+            <span id="candidateCount">0</span>&nbsp;/&nbsp;15 candidates
           </div>
           <button class="btn-election-config" onclick="openModal('configModal')">
             <!-- <i class="fa-solid fa-gear"></i> -->
@@ -213,6 +213,13 @@
           style="display:none; background: rgba(220,53,69,0.15); border: 1px solid rgba(220,53,69,0.4); border-radius: 10px; padding: 12px 20px; margin-bottom: 18px; color: #ff6b6b; font-weight: 600;">
           <i class="fa-solid fa-circle-xmark"></i>
           This election has ended. New candidates cannot be registered.
+        </div>
+
+        <!-- NOTA info notice -->
+        <div id="notaInfoNotice"
+          style="display:flex; align-items:center; gap:10px; background: rgba(197,165,66,0.08); border: 1px solid rgba(197,165,66,0.25); border-radius: 10px; padding: 12px 20px; margin-bottom: 18px; color: var(--gold); font-size:13px; font-weight:600;">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>NOTA (None Of The Above) is automatically added as Candidate&nbsp;#1 when the first candidate is registered. Maximum <strong>15 candidates</strong> (including NOTA) are allowed per election.</span>
         </div>
 
         <!-- Loading state -->
@@ -356,11 +363,24 @@
       const loading = document.getElementById('candidatesLoading');
       const empty = document.getElementById('candidatesEmpty');
       const count = document.getElementById('candidateCount');
+      const registerBtn = document.getElementById('registerCandidateBtn');
+      const MAX_CANDIDATES = 15;
 
       loading.style.display = 'none';
       grid.innerHTML = '';
       const rows = tbody.querySelectorAll('tr');
       count.textContent = rows.length;
+
+      // Enforce limit on the Register Candidate button
+      if (registerBtn && !registerBtn.disabled) {
+        if (rows.length >= MAX_CANDIDATES) {
+          registerBtn.disabled = true;
+          registerBtn.title = `Maximum ${MAX_CANDIDATES} candidates reached.`;
+        } else {
+          registerBtn.disabled = false;
+          registerBtn.title = '';
+        }
+      }
 
       if (rows.length === 0) {
         empty.style.display = 'flex';
@@ -374,14 +394,15 @@
         const logoCell = cells[0].innerHTML;
         const name = cells[1].textContent.trim();
         const party = cells[2].textContent.trim();
+        const isNota = name.toUpperCase() === 'NOTA';
 
         const card = document.createElement('div');
-        card.className = 'candidate-card';
+        card.className = 'candidate-card' + (isNota ? ' nota-card' : '');
         card.style.animationDelay = (idx * 0.06) + 's';
         card.innerHTML = `
           <div class="candidate-logo">${logoCell}</div>
           <div class="candidate-info">
-            <h3 class="candidate-name">${name}</h3>
+            <h3 class="candidate-name">${name}${isNota ? ' <span class="nota-badge">DEFAULT</span>' : ''}</h3>
             <p class="candidate-party"><i class="fa-solid fa-flag"></i> ${party}</p>
           </div>
           <div class="candidate-id-badge">#${idx + 1}</div>
