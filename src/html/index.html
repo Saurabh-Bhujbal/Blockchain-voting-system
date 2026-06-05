@@ -190,7 +190,6 @@
       font-size: 13px;
       font-weight: 500;
       margin-bottom: 12px;
-      display: none;
       align-items: flex-start;
       gap: 8px;
     }
@@ -443,9 +442,11 @@
         video.srcObject.getTracks().forEach(t => t.stop());
         video.srcObject = null;
       }
-      // Re-enable vote buttons if cancelled
+      // Re-enable vote buttons and clear pending candidate (cancel/escape only)
       document.querySelectorAll('.vote-btn').forEach(b => { b.disabled = false; });
-      window.App._pendingCandidateId = null;
+      if (window.App) {
+        window.App._pendingCandidateId = null;
+      }
     }
 
     async function _runFaceVerify() {
@@ -470,13 +471,34 @@
         if (!voterId) throw new Error('Voter session not found. Please log in again.');
 
         // Run verification
-        await window.FaceRecognition.verify(voterId);
+        console.log("Starting Face Verification for voter:", voterId);
+        const verified = await window.FaceRecognition.verify(voterId);
+        console.log("Face Verification result:", verified);
 
-        // SUCCESS: close modal and submit vote
-        closeFaceVerifyModal();
+        if (verified !== true) {
+          throw new Error('Face verification failed. Please try again.');
+        }
+
+        // ── SUCCESS ──
+        console.log("Face verified successfully! Closing modal and scheduling vote submission...");
+        // Close the modal overlay manually instead of calling closeFaceVerifyModal(),
+        // because closeFaceVerifyModal() sets _pendingCandidateId = null and re-enables
+        // vote buttons — which would break the subsequent vote submission.
+        const overlay = document.getElementById('faceVerifyOverlay');
+        overlay.classList.remove('active');
         document.body.style.overflow = '';
-        // Small delay so user sees "Verified!" state briefly
+
+        // Stop camera
+        const video = document.getElementById('face-verify-preview');
+        if (video && video.srcObject) {
+          video.srcObject.getTracks().forEach(t => t.stop());
+          video.srcObject = null;
+        }
+
+        // Keep vote buttons disabled — _submitVoteAfterFaceCheck will handle final state.
+        // Submit the vote after a brief delay so user sees "Verified!" feedback.
         setTimeout(() => {
+          console.log("Calling window.App._submitVoteAfterFaceCheck()...");
           window.App._submitVoteAfterFaceCheck();
         }, 800);
 

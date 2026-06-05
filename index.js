@@ -282,6 +282,10 @@ app.get('/js/app.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'src/js/app.js'))
 });
 
+app.get('/js/config.js', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src/js/config.js'))
+});
+
 app.get('/admin.html', authorizeUser, (req, res) => {
   res.sendFile(path.join(__dirname, 'src/html/admin.html'));
 });

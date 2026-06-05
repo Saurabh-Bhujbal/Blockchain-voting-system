@@ -543,7 +543,8 @@ window.App = {
 
   // Called when voter clicks ✓ Vote — opens face verify modal instead of voting immediately
   vote: function(candidateID) {
-    if (!App.currentElectionId) {
+    console.log("App.vote called for candidate:", candidateID);
+    if (!window.App.currentElectionId) {
       alert('No election selected.');
       return;
     }
@@ -551,42 +552,50 @@ window.App = {
       $("#msg").html("<p class='text-danger'>Invalid candidate selection.</p>");
       return;
     }
-    if (!App.voterId) {
+    if (!window.App.voterId) {
       alert('Voter Identity not found. Please log in again.');
       return;
     }
 
     // Disable all vote buttons to prevent double-clicks
-    $(".vote-btn").attr('disabled', true);
+    $(".vote-btn").prop('disabled', true).attr('disabled', 'disabled');
     $("#msg").html('');
 
     // Store which candidate the voter chose
-    App._pendingCandidateId = candidateID;
+    window.App._pendingCandidateId = candidateID;
+    console.log("Stored pending candidate ID:", window.App._pendingCandidateId);
 
     // Open the face verification modal
     if (typeof window.openFaceVerifyModal === 'function') {
+      console.log("Opening face verification modal...");
       window.openFaceVerifyModal();
     } else {
+      console.warn("window.openFaceVerifyModal is not a function. Submitting vote directly...");
       // Fallback: if modal not available, submit directly (should not happen)
-      App._submitVoteAfterFaceCheck();
+      window.App._submitVoteAfterFaceCheck();
     }
   },
 
   // Called by the face modal after successful verification
   _submitVoteAfterFaceCheck: async function() {
-    const candidateID = App._pendingCandidateId;
-    if (!candidateID) return;
+    const candidateID = window.App._pendingCandidateId;
+    console.log("App._submitVoteAfterFaceCheck called. Pending candidate ID:", candidateID);
+    if (!candidateID) {
+      console.error("No pending candidate ID found! Cannot submit vote.");
+      return;
+    }
 
     $("#msg").html("<p class='text-primary'><i class='fa-solid fa-spinner fa-spin'></i> Submitting your vote on the blockchain...</p>");
 
     try {
+      console.log("Sending POST /blockchain/vote request for election:", window.App.currentElectionId, "candidate:", candidateID, "voter:", window.App.voterId);
       const res = await fetch(`${getBackendUrl()}/blockchain/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          electionId: parseInt(App.currentElectionId),
+          electionId: parseInt(window.App.currentElectionId),
           candidateId: parseInt(candidateID),
-          voterId: App.voterId
+          voterId: window.App.voterId
         })
       });
 
@@ -595,15 +604,16 @@ window.App = {
         throw new Error(err.detail || 'Voting failed');
       }
 
-      App._pendingCandidateId = null;
+      window.App._pendingCandidateId = null;
       $("#msg").html("<p class='text-success'><i class='fa-solid fa-circle-check'></i> Vote cast successfully!</p>");
-      App.loadCandidates(App.currentElectionId);
+      console.log("Vote submitted successfully! Reloading candidates...");
+      window.App.loadCandidates(window.App.currentElectionId);
     } catch (err) {
       console.error('Vote submit error:', err.message);
       $("#msg").html("<p class='text-danger'><i class='fa-solid fa-circle-xmark'></i> Error: " + err.message + '</p>');
       alert('Voting Failed:\n' + err.message);
       if (!err.message.toLowerCase().includes('voted')) {
-        $(".vote-btn").attr('disabled', false);
+        $(".vote-btn").prop('disabled', false).removeAttr('disabled');
       }
     }
   }
