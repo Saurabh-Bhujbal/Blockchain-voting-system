@@ -49,6 +49,9 @@ export const FaceRecognition = {
         const originalText = statusEl ? statusEl.textContent : "";
         if (statusEl) statusEl.textContent = "Loading face detection models (please wait)...";
         try {
+            if (typeof faceapi === 'undefined') {
+                throw new Error("Face recognition library (face-api.js) is not loaded. Please check your Content Security Policy.");
+            }
             const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
             await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
             await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
@@ -57,6 +60,9 @@ export const FaceRecognition = {
             if (statusEl) statusEl.textContent = originalText;
         } catch (err) {
             console.error("Failed to load face-api.js models:", err);
+            if (err.message && err.message.includes("face-api.js")) {
+                throw err;
+            }
             throw new Error("Could not load face detection models. Please check your internet connection.");
         }
     },
