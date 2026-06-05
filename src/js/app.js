@@ -30,6 +30,33 @@ function getVoterIdFromToken() {
   }
 }
 
+// ── Global Logo Error Handler ──
+// Handles fallback: .png → .jpg → SVG initials placeholder
+// Called via onerror="window.handleLogoError(this)" on candidate logo imgs.
+window.handleLogoError = function(img) {
+  var backendUrl = img.getAttribute('data-backend') || getBackendUrl();
+  var sanitized  = img.getAttribute('data-sanitized') || '';
+  var name       = img.getAttribute('data-name') || '?';
+
+  if (!img.dataset.triedJpg) {
+    // First failure: .png → try .jpg
+    img.dataset.triedJpg = '1';
+    img.src = backendUrl + '/logos/' + sanitized + '.jpg';
+  } else {
+    // Second failure: .jpg → SVG initials placeholder
+    var initials = name.split(' ')
+      .map(function(w) { return w[0] ? w[0].toUpperCase() : ''; })
+      .join('').slice(0, 2) || '?';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44">' +
+              '<rect width="44" height="44" rx="8" fill="#1a2540"/>' +
+              '<text x="22" y="30" text-anchor="middle" font-family="sans-serif" ' +
+              'font-size="14" font-weight="bold" fill="#c5a542">' +
+              initials + '</text></svg>';
+    img.src = 'data:image/svg+xml;base64,' + btoa(svg);
+    img.onerror = null; // stop further error firing
+  }
+};
+
 window.App = {
   voterId: null,
   currentElectionId: null,
@@ -107,13 +134,26 @@ window.App = {
         }
 
         console.log("Adding candidate:", nameCandidate, "to election:", App.currentElectionId);
-        
+
+        const loaderText = document.getElementById('btnLoaderText');
         $('.btn-submit-content').hide();
         $('.btn-submit-loader').show();
 
-        // ── If no candidates exist yet, auto-register NOTA first ──
-        if (existingCount === 0) {
+        // ── NOTA Auto-Registration Logic ──
+        // Add NOTA as Candidate #1 only when no candidates exist yet.
+        // If election already has candidates, check if candidate #1 is NOTA.
+        let notaExists = false;
+        if (existingCount > 0) {
+          try {
+            const c1Res = await fetch(`${getBackendUrl()}/blockchain/candidate/${App.currentElectionId}/1`);
+            const c1Data = await c1Res.json();
+            notaExists = c1Data.name && c1Data.name.toUpperCase() === 'NOTA';
+          } catch (e) { /* ignore */ }
+        }
+
+        if (existingCount === 0 || (!notaExists && existingCount < MAX_CANDIDATES - 1)) {
           console.log("Auto-registering NOTA as candidate #1...");
+          if (loaderText) loaderText.textContent = 'Registering NOTA\u2026';
           try {
             const notaTx = await fetch(`${getBackendUrl()}/blockchain/add-candidate`, {
               method: 'POST',
@@ -124,20 +164,32 @@ window.App = {
                 party: 'None Of The Above'
               })
             });
-            if (notaTx.ok) {
-              // Upload a placeholder NOTA logo (SVG data-URI as a Blob)
-              const notaSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><rect width="64" height="64" rx="12" fill="#1a2540"/><text x="32" y="42" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#c5a542">NOTA</text></svg>`;
-              const blob = new Blob([notaSvg], { type: 'image/svg+xml' });
-              const notaForm = new FormData();
-              notaForm.append('candidateName', 'NOTA');
-              notaForm.append('logo', blob, 'nota.png');
-              await fetch(`${getBackendUrl()}/upload-logo`, { method: 'POST', body: notaForm }).catch(() => {});
-              console.log("NOTA registered successfully.");
+            if (!notaTx.ok) {
+              const errData = await notaTx.json().catch(() => ({}));
+              throw new Error(errData.detail || 'NOTA blockchain transaction failed');
             }
+            // Upload NOTA placeholder logo (SVG as PNG Blob)
+            const notaSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+              '<rect width="64" height="64" rx="12" fill="#1a2540"/>' +
+              '<text x="32" y="42" text-anchor="middle" font-family="sans-serif" ' +
+              'font-size="18" font-weight="bold" fill="#c5a542">NOTA</text></svg>';
+            const blob = new Blob([notaSvg], { type: 'image/svg+xml' });
+            const notaForm = new FormData();
+            notaForm.append('candidateName', 'NOTA');
+            notaForm.append('logo', blob, 'nota.png');
+            await fetch(`${getBackendUrl()}/upload-logo`, { method: 'POST', body: notaForm }).catch(() => {});
+            console.log("NOTA registered successfully as candidate #1.");
           } catch (notaErr) {
-            console.error("Could not auto-register NOTA:", notaErr);
+            console.error("NOTA registration failed:", notaErr);
+            $('.btn-submit-content').show();
+            $('.btn-submit-loader').hide();
+            if (loaderText) loaderText.textContent = 'Adding\u2026';
+            alert('Failed to register NOTA candidate: ' + notaErr.message + '\n\nNOTA must be registered as Candidate #1 before other candidates.');
+            return;
           }
         }
+
+        if (loaderText) loaderText.textContent = 'Adding candidate\u2026';
 
         // 1. Submit the blockchain transaction via backend API
         const txRes = await fetch(`${getBackendUrl()}/blockchain/add-candidate`, {
@@ -200,6 +252,8 @@ window.App = {
         }
 
         // Clear loader
+        const loaderTextEl = document.getElementById('btnLoaderText');
+        if (loaderTextEl) loaderTextEl.textContent = 'Adding\u2026';
         $('.btn-submit-content').show();
         $('.btn-submit-loader').hide();
 
@@ -214,6 +268,8 @@ window.App = {
       } catch (err) {
         console.error("Add Candidate error:", err);
         alert("Error adding candidate: " + err.message);
+        const loaderTextErr = document.getElementById('btnLoaderText');
+        if (loaderTextErr) loaderTextErr.textContent = 'Adding\u2026';
         $('.btn-submit-content').show();
         $('.btn-submit-loader').hide();
       }
@@ -429,16 +485,18 @@ window.App = {
         
         var backendUrl = getBackendUrl();
         var sanitizedName = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        // Use a single <img> with a JS fallback chain: .png → .jpg → SVG initials placeholder
-        // This prevents the logo from disappearing (onerror on both images caused both to hide).
-        var initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-        var placeholderSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='8' fill='%231a2540'/%3E%3Ctext x='22' y='30' text-anchor='middle' font-family='sans-serif' font-size='14' font-weight='bold' fill='%23c5a542'%3E${encodeURIComponent(initials)}%3C/text%3E%3C/svg%3E`;
-        var logoHtml = `<img
-          src="${backendUrl}/logos/${sanitizedName}.png"
-          alt="${name}"
-          style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);"
-          onerror="if(this.dataset.tried==='png'){this.src='${placeholderSvg}';this.onerror=null;}else{this.dataset.tried='png';this.src='${backendUrl}/logos/${sanitizedName}.jpg';}"
-        >`;
+        // Use a clean global handler for logo fallback: .png → .jpg → SVG initials
+        // Data attributes carry all context; onerror just calls window.handleLogoError(this)
+        var safeName = name.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        var logoHtml = '<img' +
+          ' src="' + backendUrl + '/logos/' + sanitizedName + '.png"' +
+          ' alt="' + safeName + '"' +
+          ' data-name="' + safeName + '"' +
+          ' data-backend="' + backendUrl + '"' +
+          ' data-sanitized="' + sanitizedName + '"' +
+          ' style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);"' +
+          ' onerror="window.handleLogoError(this)"' +
+          '>';
         
         var actionContent = "";
         if (isAdmin || isResultsPage) {
