@@ -541,22 +541,43 @@ window.App = {
     }
   },
 
-  vote: async function(candidateID) {    
+  // Called when voter clicks ✓ Vote — opens face verify modal instead of voting immediately
+  vote: function(candidateID) {
     if (!App.currentElectionId) {
-      alert("No election selected.");
+      alert('No election selected.');
       return;
     }
     if (!candidateID) {
-      $("#msg").html("<p class='text-danger'>Invalid candidate selection.</p>")
-      return
-    }
-    if (!App.voterId) {
-      alert("Voter Identity not found. Please log in again.");
+      $("#msg").html("<p class='text-danger'>Invalid candidate selection.</p>");
       return;
     }
-    
-    $(".vote-btn").attr("disabled", true);
-    $("#msg").html("<p class='text-primary'>Processing vote... Please wait.</p>");
+    if (!App.voterId) {
+      alert('Voter Identity not found. Please log in again.');
+      return;
+    }
+
+    // Disable all vote buttons to prevent double-clicks
+    $(".vote-btn").attr('disabled', true);
+    $("#msg").html('');
+
+    // Store which candidate the voter chose
+    App._pendingCandidateId = candidateID;
+
+    // Open the face verification modal
+    if (typeof window.openFaceVerifyModal === 'function') {
+      window.openFaceVerifyModal();
+    } else {
+      // Fallback: if modal not available, submit directly (should not happen)
+      App._submitVoteAfterFaceCheck();
+    }
+  },
+
+  // Called by the face modal after successful verification
+  _submitVoteAfterFaceCheck: async function() {
+    const candidateID = App._pendingCandidateId;
+    if (!candidateID) return;
+
+    $("#msg").html("<p class='text-primary'><i class='fa-solid fa-spinner fa-spin'></i> Submitting your vote on the blockchain...</p>");
 
     try {
       const res = await fetch(`${getBackendUrl()}/blockchain/vote`, {
@@ -568,25 +589,26 @@ window.App = {
           voterId: App.voterId
         })
       });
-      
+
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.detail || "Voting failed");
+        throw new Error(err.detail || 'Voting failed');
       }
-      
-      $("#msg").html("<p class='text-success'>Vote cast successfully!</p>");
+
+      App._pendingCandidateId = null;
+      $("#msg").html("<p class='text-success'><i class='fa-solid fa-circle-check'></i> Vote cast successfully!</p>");
       App.loadCandidates(App.currentElectionId);
     } catch (err) {
-      console.error("ERROR! " + err.message);
-      $("#msg").html("<p class='text-danger'>Error: " + err.message + "</p>");
-      alert("Voting Failed:\n" + err.message);
-      if (!err.message.toLowerCase().includes("voted")) {
-        $(".vote-btn").attr("disabled", false);
+      console.error('Vote submit error:', err.message);
+      $("#msg").html("<p class='text-danger'><i class='fa-solid fa-circle-xmark'></i> Error: " + err.message + '</p>');
+      alert('Voting Failed:\n' + err.message);
+      if (!err.message.toLowerCase().includes('voted')) {
+        $(".vote-btn").attr('disabled', false);
       }
     }
   }
 }
 
-window.addEventListener("load", function() {
-  window.App.eventStart()
-})
+window.addEventListener('load', function() {
+  window.App.eventStart();
+});

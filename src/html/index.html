@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="../css/theme.css">
   <link rel="stylesheet" href="../css/index.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- face-api.js for pre-vote face verification -->
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
   <style>
     /* Additions for multi-election layout */
     .election-grid {
@@ -77,6 +79,164 @@
       background: var(--gold);
       border-radius: 2px;
     }
+
+    /* ── Face Verify Modal ── */
+    #faceVerifyOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: rgba(5, 10, 30, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+    }
+    #faceVerifyOverlay.active { display: flex; }
+    .fv-panel {
+      background: #0f1930;
+      border: 1px solid rgba(197,165,66,0.3);
+      border-radius: 20px;
+      padding: 32px 28px 28px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+      position: relative;
+      animation: fvSlideIn 0.35s cubic-bezier(0.32,0.72,0,1) both;
+    }
+    @keyframes fvSlideIn {
+      from { opacity:0; transform: translateY(30px) scale(0.97); }
+      to   { opacity:1; transform: translateY(0)   scale(1); }
+    }
+    .fv-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .fv-icon {
+      width: 40px; height: 40px;
+      background: rgba(197,165,66,0.12);
+      border: 1px solid rgba(197,165,66,0.3);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: var(--gold);
+      flex-shrink: 0;
+    }
+    .fv-title { font-size: 17px; font-weight: 700; color: #fff; }
+    .fv-subtitle { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .fv-close {
+      position: absolute; top: 16px; right: 16px;
+      width: 32px; height: 32px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; color: rgba(255,255,255,0.5);
+      font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .fv-close:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: #f87171; }
+    .fv-webcam-wrap {
+      position: relative; display: block;
+      border-radius: 12px; overflow: hidden;
+      border: 2px solid rgba(197,165,66,0.25);
+      background: #000;
+      margin-bottom: 16px;
+      line-height: 0;
+    }
+    #face-verify-preview {
+      width: 100%; height: auto;
+      max-height: 260px;
+      object-fit: cover;
+      display: block;
+    }
+    .fv-scanner-line {
+      position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      box-shadow: 0 0 10px var(--gold);
+      animation: biometricScan 2.5s infinite linear;
+      animation-play-state: paused;
+      opacity: 0; pointer-events: none; z-index: 10;
+      transition: opacity 0.4s;
+    }
+    .fv-loading {
+      position: absolute; inset: 0;
+      background: rgba(11,19,43,0.88);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s; z-index: 20;
+    }
+    .fv-loading.active { opacity: 1; pointer-events: all; }
+    .fv-spinner {
+      border: 4px solid rgba(197,165,66,0.15);
+      border-left-color: var(--gold);
+      border-radius: 50%; width: 44px; height: 44px;
+      animation: biometricSpin 1s infinite linear;
+    }
+    .fv-loading-text {
+      color: var(--gold); font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+    }
+    #faceVerifyStatus {
+      font-size: 13px; color: rgba(255,255,255,0.55);
+      text-align: center; min-height: 20px; margin-bottom: 14px;
+    }
+    #faceVerifyError {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.35);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #f87171;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      display: none;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    #fvCaptureBtn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--saffron) 100%);
+      color: #0f1930;
+      border: none; border-radius: 12px;
+      font-family: var(--font); font-size: 15px; font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s;
+      box-shadow: 0 4px 16px rgba(197,165,66,0.35);
+    }
+    #fvCaptureBtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(197,165,66,0.5); }
+    #fvCaptureBtn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+    #fvRetryBtn {
+      display: none;
+      width: 100%; margin-top: 10px;
+      padding: 12px;
+      background: transparent;
+      border: 1px solid rgba(197,165,66,0.35);
+      border-radius: 12px;
+      color: var(--gold);
+      font-family: var(--font); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.22s;
+    }
+    #fvRetryBtn:hover { background: rgba(197,165,66,0.08); }
+    #fvCancelBtn {
+      display: block;
+      width: 100%; margin-top: 10px;
+      padding: 12px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      color: rgba(255,255,255,0.4);
+      font-family: var(--font); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.22s;
+    }
+    #fvCancelBtn:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+    @keyframes biometricScan {
+      0%   { top: 0%; }
+      50%  { top: calc(100% - 3px); }
+      100% { top: 0%; }
+    }
+    @keyframes biometricSpin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -178,8 +338,57 @@
     </div>
   </footer>
 
+  <!-- Face Verification Modal -->
+  <div id="faceVerifyOverlay" role="dialog" aria-modal="true" aria-labelledby="fvTitle">
+    <div class="fv-panel">
+      <button class="fv-close" id="fvCloseBtn" aria-label="Cancel face verification">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="fv-header">
+        <div class="fv-icon"><i class="fa-solid fa-face-viewfinder"></i></div>
+        <div>
+          <div class="fv-title" id="fvTitle">Face Verification Required</div>
+          <div class="fv-subtitle">Confirm your identity to cast your vote</div>
+        </div>
+      </div>
+
+      <!-- Webcam -->
+      <div class="fv-webcam-wrap">
+        <video id="face-verify-preview" autoplay muted playsinline></video>
+        <div class="fv-scanner-line" id="fvScannerLine"></div>
+        <div class="fv-loading" id="fvLoadingOverlay">
+          <div class="fv-spinner"></div>
+          <span class="fv-loading-text loading-text-biometric" id="fvLoadingText">Scanning Face...</span>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <p id="face-verify-status" style="font-size:13px;color:rgba(255,255,255,0.5);text-align:center;min-height:20px;margin-bottom:14px;"></p>
+
+      <!-- Error box -->
+      <div id="faceVerifyError" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);border-radius:10px;padding:10px 14px;color:#f87171;font-size:13px;font-weight:500;margin-bottom:12px;align-items:flex-start;gap:8px;">
+        <i class="fa-solid fa-circle-xmark" style="margin-top:1px;flex-shrink:0;"></i>
+        <span id="faceVerifyErrorText"></span>
+      </div>
+
+      <!-- Buttons -->
+      <button id="faceVerifyCaptureBtn" disabled>&#9203; Initializing Camera...</button>
+      <button id="fvRetryBtn" style="display:none;width:100%;margin-top:10px;padding:12px;background:transparent;border:1px solid rgba(197,165,66,0.35);border-radius:12px;color:var(--gold);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">
+        <i class="fa-solid fa-rotate-right"></i> Retry Face Capture
+      </button>
+      <button id="fvCancelBtn">
+        <i class="fa-solid fa-xmark"></i> Cancel Vote
+      </button>
+    </div>
+  </div>
+
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="../dist/app.bundle.js" type="module"></script>
+  <!-- Load FaceRecognition and expose as window.FaceRecognition -->
+  <script type="module">
+    import { FaceRecognition } from '../js/faceRecognition.js';
+    window.FaceRecognition = FaceRecognition;
+  </script>
   <script>
     function logout() {
       localStorage.removeItem('jwtTokenVoter');
@@ -207,6 +416,97 @@
         document.getElementById('pastElectionsGrid').style.display = 'grid';
       }
     }
+
+    /* ─── Face Verify Modal Logic ─── */
+    function openFaceVerifyModal() {
+      const overlay = document.getElementById('faceVerifyOverlay');
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      // Reset state
+      document.getElementById('faceVerifyError').style.display = 'none';
+      document.getElementById('fvRetryBtn').style.display = 'none';
+      document.getElementById('fvCancelBtn').style.display = 'block';
+
+      // Start face verification flow
+      _runFaceVerify();
+    }
+    window.openFaceVerifyModal = openFaceVerifyModal;
+
+    function closeFaceVerifyModal() {
+      const overlay = document.getElementById('faceVerifyOverlay');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      // Stop camera if running
+      const video = document.getElementById('face-verify-preview');
+      if (video && video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+      }
+      // Re-enable vote buttons if cancelled
+      document.querySelectorAll('.vote-btn').forEach(b => { b.disabled = false; });
+      window.App._pendingCandidateId = null;
+    }
+
+    async function _runFaceVerify() {
+      const errorBox = document.getElementById('faceVerifyError');
+      const errorText = document.getElementById('faceVerifyErrorText');
+      const retryBtn = document.getElementById('fvRetryBtn');
+      const captureBtn = document.getElementById('faceVerifyCaptureBtn');
+
+      errorBox.style.display = 'none';
+      retryBtn.style.display = 'none';
+
+      try {
+        // Wait for FaceRecognition to be available (module loads async)
+        let attempts = 0;
+        while (!window.FaceRecognition && attempts < 50) {
+          await new Promise(r => setTimeout(r, 100));
+          attempts++;
+        }
+        if (!window.FaceRecognition) throw new Error('Face recognition module not loaded. Please refresh the page.');
+
+        const voterId = window.App && window.App.voterId;
+        if (!voterId) throw new Error('Voter session not found. Please log in again.');
+
+        // Run verification
+        await window.FaceRecognition.verify(voterId);
+
+        // SUCCESS: close modal and submit vote
+        closeFaceVerifyModal();
+        document.body.style.overflow = '';
+        // Small delay so user sees "Verified!" state briefly
+        setTimeout(() => {
+          window.App._submitVoteAfterFaceCheck();
+        }, 800);
+
+      } catch (err) {
+        // FAILURE: show error and retry button
+        errorText.textContent = err.message || 'Face verification failed. Your face does not match the registered voter face.';
+        errorBox.style.display = 'flex';
+        retryBtn.style.display = 'block';
+        document.getElementById('face-verify-status').textContent = '';
+      }
+    }
+
+    // Wire up buttons
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('fvCloseBtn').addEventListener('click', closeFaceVerifyModal);
+      document.getElementById('fvCancelBtn').addEventListener('click', closeFaceVerifyModal);
+      document.getElementById('fvRetryBtn').addEventListener('click', function() {
+        // Reset capture button state and retry
+        const captureBtn = document.getElementById('faceVerifyCaptureBtn');
+        captureBtn.disabled = true;
+        captureBtn.textContent = '\u23F3 Initializing Camera...';
+        _runFaceVerify();
+      });
+      // Close on Escape key
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.getElementById('faceVerifyOverlay').classList.contains('active')) {
+          closeFaceVerifyModal();
+        }
+      });
+    });
   </script>
 </body>
 </html>

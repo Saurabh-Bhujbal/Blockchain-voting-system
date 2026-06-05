@@ -378,5 +378,115 @@ export const FaceRecognition = {
         } finally {
             FaceRecognition._processing = false;
         }
+    },
+    // ── Verify face before voting (same flow as login but resolves true/false) ──
+    verify: async (voterId) => {
+        if (FaceRecognition._processing) {
+            console.warn("FaceRecognition verify already in progress.");
+            return false;
+        }
+        FaceRecognition._processing = true;
+
+        const videoEl   = document.getElementById('face-verify-preview');
+        const statusEl  = document.getElementById('face-verify-status');
+        const captureBtn = document.getElementById('faceVerifyCaptureBtn');
+
+        if (!videoEl) {
+            FaceRecognition._processing = false;
+            throw new Error("Face verify preview element not found");
+        }
+
+        let stream = null;
+        let loadingOverlay = null;
+
+        try {
+            if (captureBtn) {
+                captureBtn.disabled = true;
+                captureBtn.textContent = '\u23F3 Initializing Camera...';
+            }
+
+            await FaceRecognition._loadModels(statusEl);
+
+            if (statusEl) statusEl.textContent = 'Starting camera...';
+            stream = await FaceRecognition._startCamera(videoEl);
+            if (statusEl) statusEl.textContent = 'Camera ready. Position your face and click Capture.';
+
+            if (captureBtn) {
+                captureBtn.disabled = false;
+                captureBtn.innerHTML = '\uD83D\uDCF8 Capture &amp; Verify Face';
+            }
+
+            // Wait for user to click capture
+            const descriptorArray = await new Promise((resolve, reject) => {
+                const handler = async () => {
+                    captureBtn.removeEventListener('click', handler);
+                    if (captureBtn) {
+                        captureBtn.disabled = true;
+                        captureBtn.textContent = '\u23F3 Detecting face...';
+                    }
+                    if (statusEl) statusEl.textContent = 'Detecting and extracting facial features...';
+
+                    loadingOverlay = videoEl.parentElement.querySelector('.loading-overlay');
+                    const loadingText = videoEl.parentElement.querySelector('.loading-text-biometric');
+                    if (loadingOverlay) {
+                        if (loadingText) loadingText.textContent = 'Scanning Face...';
+                        loadingOverlay.classList.add('active');
+                    }
+
+                    try {
+                        await FaceRecognition._waitForVideoReady(videoEl, 3000);
+                        const detection = await FaceRecognition._detectFaceWithRetries(videoEl, 3, 600);
+                        if (!detection) {
+                            throw new Error('No face detected. Please ensure your face is clearly visible and try again.');
+                        }
+                        resolve(Array.from(detection.descriptor));
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+                captureBtn.addEventListener('click', handler);
+            });
+
+            FaceRecognition._stopCamera(stream, videoEl);
+            stream = null;
+
+            const loadingText = videoEl.parentElement.querySelector('.loading-text-biometric');
+            if (loadingText) loadingText.textContent = 'Verifying identity...';
+            if (captureBtn) captureBtn.textContent = '\u23F3 Verifying...';
+            if (statusEl) statusEl.textContent = 'Verifying facial identity with server...';
+
+            const response = await fetch(`${getBackendUrl()}/face/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ voter_id: voterId, face_encoding: descriptorArray })
+            });
+
+            if (loadingOverlay) loadingOverlay.classList.remove('active');
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || errData.error || 'Face verification failed. Your face does not match the registered face.');
+            }
+
+            if (captureBtn) {
+                captureBtn.disabled = true;
+                captureBtn.textContent = '\u2705 Face Verified!';
+            }
+            if (statusEl) statusEl.textContent = 'Identity confirmed. Submitting your vote...';
+
+            return true;
+
+        } catch (err) {
+            if (stream) FaceRecognition._stopCamera(stream, videoEl);
+            if (loadingOverlay) loadingOverlay.classList.remove('active');
+            if (captureBtn) {
+                captureBtn.disabled = true;
+                captureBtn.textContent = '\u274C Verification Failed';
+            }
+            console.error('Face verify failed:', err);
+            throw err; // caller shows the error message
+        } finally {
+            FaceRecognition._processing = false;
+        }
     }
 };
