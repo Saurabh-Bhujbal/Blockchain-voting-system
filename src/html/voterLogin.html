@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecureVote — Voter Login</title>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/login.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+  <!-- Tricolor Strip -->
+  <div class="tricolor"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/landing.html" class="brand">
+      <div class="brand-emblem">
+        <i class="fa-solid fa-dharmachakra"></i>
+      </div>
+      <div class="brand-text">
+        <h1>Election Commission</h1>
+        <p>Voter Portal</p>
+      </div>
+    </a>
+  </nav>
+
+  <div class="login-wrap" style="flex: 1; align-items: flex-start; padding-top: 60px;">
+    <div class="login-panel">
+
+      <div class="login-brand">
+        <h2 style="font-size: 24px; color: var(--primary);">Citizen Authentication</h2>
+        <p>Please enter your credentials to access the voting booth.</p>
+      </div>
+
+      <div class="login-card">
+        <p id="login-step-indicator" class="page-eyebrow" style="margin-bottom:18px;">Step 1 of 2: Enter your credentials</p>
+
+        <!-- ── Step 1: Password Form (visible by default) ── -->
+        <form id="loginForm">
+          <div class="form-field">
+            <label for="voter-id">Voter ID</label>
+            <input type="text" id="voter-id" name="voter-id" placeholder="Enter your Voter ID" autocomplete="off"
+              required>
+          </div>
+          <div class="form-field" style="margin-bottom:28px;">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Verify Credentials →</button>
+        </form>
+
+        <!-- ── Step 2: Face Recognition Login Section (hidden until Step 1 passes) ── -->
+        <div id="face-login-section" style="display:none; margin-top:20px; padding-top:20px; border-top:1px dashed var(--border);">
+          <p class="page-eyebrow" style="text-align:center;">Face Verification</p>
+          <div style="text-align:center; margin-bottom:15px;">
+            <div class="webcam-container">
+              <video id="face-login-preview" width="300" height="225" autoplay muted playsinline style="display:block;"></video>
+              <div class="scanner-line"></div>
+              <div class="loading-overlay" id="face-login-loading">
+                <div class="loading-spinner-biometric"></div>
+                <span class="loading-text-biometric" id="face-login-loading-text">Verifying Face...</span>
+              </div>
+            </div>
+          </div>
+          <button type="button" id="faceLoginCaptureBtn" class="btn btn-success btn-block" style="background:#0ea5e9;">
+            📸 Capture &amp; Verify Face
+          </button>
+          <button type="button" id="faceLoginRetryBtn" class="btn btn-outline btn-block" style="display:none; margin-top:10px; border-color:#f59e0b; color:#d97706;">
+            🔄 Retry Face Capture
+          </button>
+          <p id="face-login-status" style="font-size:13px; color:var(--text-mid); text-align:center; margin-top:10px;"></p>
+        </div>
+        <!-- ── Face Recognition Login Section End ── -->
+
+        <div id="msg"></div>
+      </div>
+
+      <div class="login-footer" style="margin-bottom: 8px;">
+        New user? <a href="/register.html" style="color:var(--primary); text-decoration:none; font-weight:600;">Create
+          an Account</a>
+      </div>
+
+      <div class="login-footer">
+        Looking for the <a href="/adminLogin.html"
+          style="color:var(--gold); text-decoration:none; font-weight:600;">Admin Portal</a>?
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        <p>&copy; 2024 Election Commission. All rights reserved. Powered by Ethereum Blockchain & FastAPI.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="../js/login.js" type="module"></script>
+</body>
+
+</html>

@@ -1,0 +1,775 @@
+/* ============================================================
+   MANAGE CANDIDATES PAGE — manage.css
+   Supplements theme.css + admin.css
+   ============================================================ */
+
+/* ─── Navbar Action Row ─── */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-back-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+  cursor: pointer;
+  text-decoration: none;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: all 0.22s ease;
+}
+.btn-back-nav:hover {
+  background: rgba(197,165,66,0.12);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ─── Page Layout ─── */
+.manage-layout {
+  display: block;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 32px 80px;
+  flex: 1;
+}
+
+@media (max-width: 960px) {
+  .manage-layout {
+    grid-template-columns: 1fr;
+    padding: 24px 16px 60px;
+  }
+}
+
+/* ─── Left Panel Header ─── */
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.panel-icon {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, var(--gold), var(--saffron));
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: var(--navy-deep);
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(197,165,66,0.35);
+}
+
+.panel-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--white);
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* ─── Glass Cards ─── */
+.glass-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(197,165,66,0.18);
+  border-radius: 20px;
+  padding: 28px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  margin-bottom: 24px;
+  transition: border-color 0.3s ease;
+}
+.glass-card:hover {
+  border-color: rgba(197,165,66,0.35);
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.card-icon-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.card-icon-sm.saffron {
+  background: rgba(230,115,38,0.15);
+  color: var(--saffron);
+  border: 1px solid rgba(230,115,38,0.25);
+}
+.card-icon-sm.green {
+  background: rgba(52,179,88,0.15);
+  color: var(--green);
+  border: 1px solid rgba(52,179,88,0.25);
+}
+
+.card-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.2px;
+}
+
+/* ─── Form Fields ─── */
+.form-field {
+  margin-bottom: 18px;
+}
+.form-field.mb-0 { margin-bottom: 0; }
+.mt-16 { margin-top: 16px; }
+
+.form-field label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.form-field label i {
+  font-size: 11px;
+  color: var(--gold);
+}
+
+.input-wrap input[type="text"],
+.input-wrap input[type="date"] {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--white);
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.22s, box-shadow 0.22s, background 0.22s;
+}
+.input-wrap input[type="text"]:focus,
+.input-wrap input[type="date"]:focus {
+  border-color: var(--gold);
+  background: rgba(197,165,66,0.06);
+  box-shadow: 0 0 0 3px rgba(197,165,66,0.15);
+}
+.input-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+/* ─── File Drop Zone ─── */
+.file-drop-zone {
+  position: relative;
+  border: 2px dashed rgba(197,165,66,0.3);
+  border-radius: 12px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(197,165,66,0.03);
+  transition: all 0.22s ease;
+}
+.file-drop-zone:hover,
+.file-drop-zone.drag-over {
+  border-color: var(--gold);
+  background: rgba(197,165,66,0.08);
+}
+.file-drop-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  display: none;
+}
+.drop-icon {
+  font-size: 28px;
+  color: var(--gold);
+  margin-bottom: 10px;
+  opacity: 0.8;
+}
+.drop-text {
+  font-size: 13px;
+  color: var(--text-light);
+  margin-bottom: 4px;
+}
+.drop-link {
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.drop-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ─── Logo Preview ─── */
+.logo-preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(197,165,66,0.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-top: 8px;
+}
+.logo-preview-wrap img {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.logo-preview-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo-file-name {
+  font-size: 13px;
+  color: var(--text-light);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.logo-remove-btn {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.25);
+  color: #ef4444;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.logo-remove-btn:hover {
+  background: rgba(239,68,68,0.25);
+}
+
+/* ─── Status Messages ─── */
+.status-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 12px;
+}
+.status-success {
+  background: rgba(52,179,88,0.12);
+  border: 1px solid rgba(52,179,88,0.3);
+  color: #4ade80;
+}
+.status-error {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #f87171;
+}
+
+/* ─── Submit Buttons ─── */
+.btn-submit {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--saffron) 100%);
+  color: var(--navy-deep);
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(197,165,66,0.3);
+  position: relative;
+  overflow: hidden;
+}
+.btn-submit::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background 0.22s;
+}
+.btn-submit:hover::before { background: rgba(255,255,255,0.1); }
+.btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(197,165,66,0.45);
+}
+.btn-submit:active { transform: translateY(0); }
+
+.btn-submit-green {
+  background: linear-gradient(135deg, var(--green) 0%, #2a9146 100%);
+  box-shadow: 0 4px 16px rgba(52,179,88,0.3);
+}
+.btn-submit-green:hover {
+  box-shadow: 0 8px 24px rgba(52,179,88,0.45);
+}
+
+.btn-submit-content,
+.btn-submit-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+/* ─── Dates Status ─── */
+.dates-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(52,179,88,0.08);
+  border: 1px solid rgba(52,179,88,0.2);
+  border-radius: 10px;
+  font-size: 13px;
+  color: #4ade80;
+  margin-top: 16px;
+}
+.dates-status i { opacity: 0.7; }
+
+/* ─── Election Selector Dropdown ─── */
+.election-selector {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255,255,255,0.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23C5A542' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 14px center;
+  border: 1.5px solid rgba(197,165,66,0.45);
+  border-radius: 10px;
+  padding: 10px 40px 10px 16px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  min-width: 260px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.election-selector:hover {
+  border-color: var(--gold);
+  background-color: rgba(197,165,66,0.08);
+}
+.election-selector:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(197,165,66,0.2);
+  background-color: rgba(197,165,66,0.06);
+}
+.election-selector option {
+  background: #0f1930;
+  color: var(--white);
+  font-weight: 500;
+  padding: 8px 12px;
+}
+.election-selector option:disabled {
+  color: var(--text-muted);
+}
+
+/* ─── Candidates Panel ─── */
+.candidates-panel {
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.candidates-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.candidates-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--white);
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 340px;
+}
+
+.candidates-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.candidate-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(197,165,66,0.12);
+  border: 1px solid rgba(197,165,66,0.25);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+/* ─── Register Candidate & Election Config Buttons ─── */
+.btn-register-candidate,
+.btn-election-config {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 22px;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.btn-register-candidate {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--saffron) 100%);
+  color: var(--navy-deep);
+  box-shadow: 0 4px 16px rgba(197,165,66,0.35);
+}
+.btn-register-candidate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(197,165,66,0.5);
+}
+.btn-register-candidate:active {
+  transform: translateY(0);
+}
+
+.btn-election-config {
+  background: linear-gradient(135deg, var(--green) 0%, #2a9146 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(52,179,88,0.35);
+}
+.btn-election-config:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(52,179,88,0.5);
+}
+.btn-election-config:active {
+  transform: translateY(0);
+}
+
+/* ─── Loading State ─── */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex: 1;
+  padding: 80px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(197,165,66,0.15);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Empty State ─── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+  padding: 80px 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+.empty-icon {
+  font-size: 48px;
+  opacity: 0.3;
+  margin-bottom: 8px;
+}
+.empty-state h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-light);
+}
+.empty-state p {
+  font-size: 14px;
+  max-width: 280px;
+}
+
+/* ─── Candidate Cards Grid ─── */
+.candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.candidate-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  transition: all 0.25s ease;
+  animation: cardIn 0.4s ease both;
+  cursor: default;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)  scale(1); }
+}
+.candidate-card:hover {
+  border-color: rgba(197,165,66,0.35);
+  background: rgba(197,165,66,0.06);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+}
+
+.candidate-logo {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+}
+.candidate-logo img {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 10px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.candidate-info {
+  flex: 1;
+  min-width: 0;
+}
+.candidate-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.candidate-party {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.candidate-party i { font-size: 10px; color: var(--gold); opacity: 0.7; }
+
+.candidate-id-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+/* ══════════════════════════════════════════
+   MODAL DRAWER — Register Candidate
+══════════════════════════════════════════ */
+
+/* Backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 25, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.modal-backdrop.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Drawer panel — slides in from right */
+.modal-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  background: #0f1930;
+  border-left: 1px solid rgba(197,165,66,0.2);
+  box-shadow: -24px 0 80px rgba(0,0,0,0.6);
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+.modal-drawer.active {
+  transform: translateX(0);
+}
+
+/* Gold accent strip at top */
+.modal-drawer::before {
+  content: '';
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, var(--saffron), var(--gold));
+  flex-shrink: 0;
+}
+
+.modal-drawer-inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.2px;
+}
+
+.modal-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.modal-close-btn:hover {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.35);
+  color: #f87171;
+}
+
+/* Modal Body — scrollable */
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(197,165,66,0.3) transparent;
+}
+.modal-body::-webkit-scrollbar { width: 5px; }
+.modal-body::-webkit-scrollbar-thumb { background: rgba(197,165,66,0.3); border-radius: 3px; }
+
+/* Modal Footer */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 28px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.15);
+}
+
+.btn-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 20px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  flex-shrink: 0;
+}
+.btn-cancel:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.2);
+  color: var(--text-light);
+}
+
+/* Inside modal the btn-submit should flex properly */
+.modal-footer .btn-submit {
+  flex: 1;
+  margin: 0;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 540px) {
+  .modal-drawer { max-width: 100%; }
+  .candidates-header-actions { flex-direction: column; align-items: flex-end; }
+  .btn-register-candidate { font-size: 13px; padding: 9px 16px; }
+}

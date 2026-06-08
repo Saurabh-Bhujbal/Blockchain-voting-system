@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecureVote — Admin Registration (Disabled)</title>
+  <link rel="stylesheet" href="../css/login.css">
+  <style>
+    .login-brand h1 { color: var(--primary); }
+    .btn-primary { background: var(--primary) !important; color: #ffffff !important; }
+    .btn-primary:hover { background: var(--primary) !important; transform: none; }
+
+    /* ── Disabled-state styles ── */
+    .disabled-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1.5px solid rgba(239, 68, 68, 0.35);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 24px;
+    }
+    .disabled-banner .ban-icon { font-size: 22px; flex-shrink: 0; }
+    .disabled-banner .ban-text { font-size: 14px; color: #ef4444; font-weight: 600; line-height: 1.5; }
+    .disabled-banner .ban-sub  { font-size: 12px; color: var(--text-mid); font-weight: 400; margin-top: 4px; }
+
+    form input:disabled, form button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .disabled-overlay {
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      cursor: not-allowed;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-panel">
+
+      <div class="login-brand">
+        <h1>🔐 Admin Registration</h1>
+        <p>System Administration Access</p>
+      </div>
+
+      <div class="login-card">
+
+        <!-- ── DISABLED NOTICE BANNER ── -->
+        <div class="disabled-banner" role="alert" aria-live="assertive">
+          <span class="ban-icon">🚫</span>
+          <div>
+            <div class="ban-text">Admin registration is disabled.</div>
+            <div class="ban-sub">
+              Administrator accounts are provisioned directly in the database by the system administrator.
+              Please contact your system administrator for access.
+            </div>
+          </div>
+        </div>
+        <!-- ── END DISABLED NOTICE ── -->
+
+        <p class="page-eyebrow" style="margin-bottom:18px; opacity:0.4;">Create Administrator Account</p>
+
+        <form id="registerForm">
+          <div class="form-field">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter administrator name" autocomplete="off" disabled>
+          </div>
+          <div class="form-field">
+            <label for="voter-id">Admin ID</label>
+            <input type="text" id="voter-id" name="voter-id" placeholder="Create a unique Admin ID" autocomplete="off" disabled>
+          </div>
+          <div class="form-field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Create a strong password" disabled>
+          </div>
+          <div class="form-field" style="margin-bottom:28px;">
+            <label for="admin-passcode">Admin Registration Passcode</label>
+            <input type="password" id="admin-passcode" name="admin-passcode" placeholder="Enter registration passcode" disabled>
+          </div>
+          <button type="submit" id="registerBtn" class="btn btn-primary btn-block" disabled>Registration Disabled</button>
+        </form>
+
+        <div id="msg"></div>
+      </div>
+
+      <div class="login-footer">
+        Already have an admin account? <a href="/adminLogin.html" style="color:var(--primary); text-decoration:none; font-weight:600;">Sign In</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!-- adminRegister.js intentionally NOT loaded — registration is disabled -->
+  <script>
+    // Safety fallback: intercept any form submission attempt at the HTML level
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      document.getElementById('msg').innerHTML =
+        '<p style="color:#ef4444;margin-top:10px;font-size:14px;">⛔ Admin registration is not allowed. Contact the system administrator.</p>';
+      return false;
+    });
+  </script>
+</body>
+</html>

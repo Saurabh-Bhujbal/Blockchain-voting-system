@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SecureVote — Voter Registration</title>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/login.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Tricolor Strip -->
+  <div class="tricolor"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/landing.html" class="brand">
+      <div class="brand-emblem">
+        <i class="fa-solid fa-dharmachakra"></i>
+      </div>
+      <div class="brand-text">
+        <h1>Election Commission</h1>
+        <p>Voter Portal</p>
+      </div>
+    </a>
+  </nav>
+
+  <div class="login-wrap" style="flex: 1; align-items: flex-start; padding-top: 60px;">
+    <div class="login-panel">
+
+      <div class="login-brand">
+        <h2 style="font-size: 24px; color: var(--primary);">Citizen Enrollment</h2>
+        <p>Voter Registration Portal</p>
+      </div>
+
+      <div class="login-card">
+        <p class="page-eyebrow" style="margin-bottom:18px;">Create Your Account</p>
+
+        <form id="registerForm">
+          <div class="form-field">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your full name" autocomplete="off" required>
+          </div>
+          <div class="form-field">
+            <label for="voter-id">Voter ID</label>
+            <input type="text" id="voter-id" name="voter-id" placeholder="Create a unique Voter ID" autocomplete="off" required>
+          </div>
+          <div class="form-field" style="margin-bottom:28px;">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Create a strong password" required>
+          </div>
+          <button type="submit" id="regBtn" class="btn btn-primary btn-block">Register Account →</button>
+        </form>
+
+        <!-- ── Face Recognition Section Begin ── -->
+        <div id="faceSection" style="display:none; margin-top:20px; padding-top:20px; border-top:1px dashed var(--border);">
+          <p class="page-eyebrow" style="text-align:center;">Face Registration</p>
+          <p style="font-size:13px; color:var(--text-mid); text-align:center; margin-bottom:15px;">
+            Register your face for quick and secure logins.
+          </p>
+          <div style="text-align:center; margin-bottom:15px;">
+            <div class="webcam-container">
+              <video id="face-preview" width="300" height="225" autoplay muted playsinline style="display:block;"></video>
+              <div class="scanner-line"></div>
+              <div class="loading-overlay" id="face-login-loading">
+                <div class="loading-spinner-biometric"></div>
+                <span class="loading-text-biometric" id="face-login-loading-text">Registering Face...</span>
+              </div>
+            </div>
+          </div>
+          <button type="button" id="faceCaptureBtn" class="btn btn-success btn-block" style="background:#0ea5e9;">
+            📸 Capture &amp; Register Face
+          </button>
+          <p id="face-status" style="font-size:13px; color:var(--text-mid); text-align:center; margin-top:10px;"></p>
+        </div>
+        <!-- ── Face Recognition Section End ── -->
+
+        <div id="msg"></div>
+      </div>
+
+      <div class="login-footer">
+        Already have an account? <a href="/voterLogin.html" style="color:var(--primary); text-decoration:none; font-weight:600;">Sign In</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        <p>&copy; 2024 Election Commission. All rights reserved. Powered by Ethereum Blockchain & FastAPI.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="../js/register.js" type="module"></script>
+</body>
+</html>

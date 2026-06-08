@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manage Candidates — Election Commission Admin</title>
+  <meta name="description" content="Admin panel to add and manage election candidates on the Ethereum blockchain.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8000 http://127.0.0.1:7545 http://localhost:8545;">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/manage.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Tricolor Strip -->
+  <div class="tricolor"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="#" id="backToAdmin" class="brand">
+      <div class="brand-emblem">
+        <i class="fa-solid fa-dharmachakra"></i>
+      </div>
+      <div class="brand-text">
+        <h1>Election Commission</h1>
+        <p>Administration Panel</p>
+      </div>
+    </a>
+    <div class="nav-actions">
+      <a id="backBtn" class="btn-back-nav">
+        <i class="fa-solid fa-arrow-left"></i>
+        Dashboard
+      </a>
+      <button class="btn btn-danger-outline" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Log Out
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       MODALS
+  ══════════════════════════════════════ -->
+  <div class="modal-backdrop" id="modalBackdrop" onclick="closeAllModals()"></div>
+
+  <!-- 1. Register Candidate Modal -->
+  <div class="modal-drawer" id="candidateModal" role="dialog" aria-modal="true" aria-labelledby="candidateModalTitle">
+    <div class="modal-drawer-inner">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="card-icon-sm saffron"><i class="fa-solid fa-user-plus"></i></span>
+          <h2 class="modal-title" id="candidateModalTitle">Register New Candidate</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeAllModals()" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field">
+          <label for="name"><i class="fa-solid fa-id-card"></i> Full Name</label>
+          <div class="input-wrap">
+            <input type="text" id="name" placeholder="e.g. Narendra Modi" autocomplete="off">
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="party"><i class="fa-solid fa-flag"></i> Party / Affiliation</label>
+          <div class="input-wrap">
+            <input type="text" id="party" placeholder="e.g. Bharatiya Janata Party">
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="partyLogo"><i class="fa-solid fa-image"></i> Party Logo</label>
+          <div class="file-drop-zone" id="dropZone">
+            <div class="drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <p class="drop-text">Drag & drop or <span class="drop-link">browse</span></p>
+            <p class="drop-hint">PNG, JPG up to 5 MB</p>
+            <input type="file" id="partyLogo" accept="image/*">
+          </div>
+          <div id="logoPreview" class="logo-preview-wrap" style="display:none;">
+            <img id="logoPreviewImg" src="" alt="Logo preview">
+            <div class="logo-preview-info">
+              <span id="logoFileName" class="logo-file-name">file.png</span>
+              <button type="button" class="logo-remove-btn" onclick="removeLogo()">
+                <i class="fa-solid fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="addMsg" class="status-msg" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeAllModals()">
+          <i class="fa-solid fa-xmark"></i> Cancel
+        </button>
+        <button id="addCandidate" class="btn-submit">
+          <span class="btn-submit-content">
+            <i class="fa-solid fa-plus-circle"></i>
+            Add to Registry
+          </span>
+          <span class="btn-submit-loader" style="display:none;">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Adding…
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Election Configuration Modal -->
+  <div class="modal-drawer" id="configModal" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
+    <div class="modal-drawer-inner">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="card-icon-sm green"><i class="fa-solid fa-calendar-check"></i></span>
+          <h2 class="modal-title" id="configModalTitle">Add Upcoming Election</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeAllModals()" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-field mt-16">
+          <label for="electionName"><i class="fa-solid fa-trophy"></i> Election Title</label>
+          <div class="input-wrap">
+            <input type="text" id="electionName" placeholder="e.g. General Election 2024" autocomplete="off">
+          </div>
+        </div>
+        <div class="dates-status" id="currentDates">
+          <i class="fa-solid fa-circle-info"></i>
+          <span id="dates">Fetching current dates…</span>
+        </div>
+        <div class="form-row-2 mt-16">
+          <div class="form-field mb-0">
+            <label for="startDate"><i class="fa-regular fa-calendar"></i> Start Date</label>
+            <div class="input-wrap">
+              <input type="date" id="startDate">
+            </div>
+          </div>
+          <div class="form-field mb-0">
+            <label for="endDate"><i class="fa-regular fa-calendar-check"></i> End Date</label>
+            <div class="input-wrap">
+              <input type="date" id="endDate">
+            </div>
+          </div>
+        </div>
+        <div id="dateMsg" class="status-msg" style="display:none; margin-top:12px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeAllModals()">
+          <i class="fa-solid fa-xmark"></i> Cancel
+        </button>
+        <button id="addDate" class="btn-submit btn-submit-green">
+          <span class="btn-submit-content">
+            <!-- <i class="fa-solid fa-floppy-disk"></i> -->
+             <i class="fa-solid fa-plus"></i>
+            Add Election
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PAGE CONTENT
+  ══════════════════════════════════════ -->
+  <div class="manage-layout">
+    <!-- Main Column: Candidate List (Now single column layout) -->
+    <main class="candidates-panel">
+      <div class="candidates-header">
+        <div>
+          <p class="page-eyebrow">Admin · Candidate Registry</p>
+          <div style="display:flex; align-items:center; gap: 12px; margin-top: 8px;">
+            <select id="electionSelector" class="election-selector">
+              <option value="" disabled selected>Loading elections...</option>
+            </select>
+          </div>
+        </div>
+        <div class="candidates-header-actions">
+          <div class="candidate-count-badge" id="candidateCountBadge">
+            <i class="fa-solid fa-users"></i>
+            <span id="candidateCount">0</span> candidates
+          </div>
+          <button class="btn-election-config" onclick="openModal('configModal')">
+            <!-- <i class="fa-solid fa-gear"></i> -->
+             <i class="fa-solid fa-plus"></i>
+            Add Election
+          </button>
+          <button class="btn-register-candidate" id="registerCandidateBtn" onclick="openModal('candidateModal')" disabled title="Select an election first">
+            <i class="fa-solid fa-user-plus"></i>
+            Register Candidate
+          </button>
+        </div>
+      </div>
+
+      <!-- Prompt shown before election is selected -->
+      <div id="noElectionPrompt" style="text-align:center; padding: 60px 20px; color: rgba(255,255,255,0.5);">
+        <i class="fa-solid fa-hand-pointer" style="font-size: 48px; margin-bottom: 16px; display: block; color: var(--gold);"></i>
+        <h3 style="color: rgba(255,255,255,0.7); margin-bottom: 8px;">Select an Election</h3>
+        <p>Please select an election from the dropdown above to view and manage candidates.</p>
+      </div>
+
+      <!-- All candidate content wrapped — hidden until election selected -->
+      <div id="candidateArea" style="display:none;">
+
+        <!-- Election ended notice -->
+        <div id="electionEndedNotice" style="display:none; background: rgba(220,53,69,0.15); border: 1px solid rgba(220,53,69,0.4); border-radius: 10px; padding: 12px 20px; margin-bottom: 18px; color: #ff6b6b; font-weight: 600;">
+          <i class="fa-solid fa-circle-xmark"></i>
+          This election has ended. New candidates cannot be registered.
+        </div>
+
+        <!-- Loading state -->
+        <div class="loading-state" id="candidatesLoading" style="display:none;">
+          <div class="loading-spinner"></div>
+          <p>Loading candidates from blockchain…</p>
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state" id="candidatesEmpty" style="display:none;">
+          <div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>
+          <h3>No Candidates Yet</h3>
+          <p>Click <strong>Register Candidate</strong> to add the first candidate.</p>
+          <button class="btn-register-candidate" style="margin-top:18px;" onclick="openModal('candidateModal')">
+            <i class="fa-solid fa-user-plus"></i>
+            Register Candidate
+          </button>
+        </div>
+
+        <!-- Candidate cards grid -->
+        <div class="candidate-grid" id="candidateGrid"></div>
+
+        <!-- Hidden table — populated by app.js via #boxCandidate -->
+        <div style="display:none;">
+          <table><tbody id="boxCandidate"></tbody></table>
+        </div>
+
+      </div><!-- end #candidateArea -->
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom" style="justify-content:center;">
+        <p>© 2024 Election Commission. All rights reserved. Powered by Ethereum Blockchain & FastAPI.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="../dist/app.bundle.js" type="module"></script>
+  <script>
+    /* ── Auth / Navigation ── */
+    const auth = new URLSearchParams(window.location.search).get('Authorization');
+    document.getElementById('backBtn').onclick = () => {
+      window.location.href = `./admin.html?Authorization=${encodeURIComponent(auth)}`;
+    };
+    document.getElementById('backToAdmin').onclick = (e) => {
+      e.preventDefault();
+      window.location.href = `./admin.html?Authorization=${encodeURIComponent(auth)}`;
+    };
+    function logout() {
+      localStorage.removeItem('jwtTokenAdmin');
+      window.location.href = '/adminLogin.html';
+    }
+
+    /* ── Modal Open / Close ── */
+    function openModal(modalId) {
+      document.getElementById('modalBackdrop').classList.add('active');
+      document.getElementById(modalId).classList.add('active');
+      document.body.style.overflow = 'hidden';
+      // Focus first input based on modal
+      if (modalId === 'candidateModal') {
+        setTimeout(() => document.getElementById('name').focus(), 350);
+      } else if (modalId === 'configModal') {
+        setTimeout(() => document.getElementById('electionName').focus(), 350);
+      }
+    }
+    function closeAllModals() {
+      document.getElementById('modalBackdrop').classList.remove('active');
+      document.querySelectorAll('.modal-drawer').forEach(m => m.classList.remove('active'));
+      document.body.style.overflow = '';
+    }
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeAllModals();
+    });
+
+    /* ── Logo Upload & Preview ── */
+    const dropZone = document.getElementById('dropZone');
+    const logoInput = document.getElementById('partyLogo');
+
+    dropZone.addEventListener('click', () => logoInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) handleLogoFile(file);
+    });
+
+    logoInput.addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (file) handleLogoFile(file);
+    });
+
+    function handleLogoFile(file) {
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        document.getElementById('logoPreviewImg').src = ev.target.result;
+        document.getElementById('logoFileName').textContent = file.name;
+        document.getElementById('logoPreview').style.display = 'flex';
+        dropZone.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeLogo() {
+      logoInput.value = '';
+      document.getElementById('logoPreview').style.display = 'none';
+      dropZone.style.display = 'block';
+    }
+
+    /* ── Logo upload on Add Candidate click ── */
+    document.getElementById('addCandidate').addEventListener('click', function () {
+      const nameVal = document.getElementById('name').value.trim();
+      const logoFile = logoInput.files[0];
+      if (nameVal && logoFile) {
+        const formData = new FormData();
+        formData.append('candidateName', nameVal);
+        formData.append('logo', logoFile);
+        fetch('/upload-logo', { method: 'POST', body: formData })
+          .then(res => res.json())
+          .then(data => {
+            console.log('Logo upload response:', data);
+            // Close modal after short delay so app.js can finish
+            setTimeout(() => closeAllModals(), 1200);
+          })
+          .catch(err => console.error('Logo upload error:', err));
+      }
+    }, true); // useCapture=true — runs before app.js handler
+
+    /* ── Status helper ── */
+    function showStatus(elId, type, msg) {
+      const el = document.getElementById(elId);
+      el.className = 'status-msg status-' + type;
+      el.innerHTML = `<i class="fa-solid fa-${type === 'success' ? 'circle-check' : 'circle-exclamation'}"></i> ${msg}`;
+      el.style.display = 'flex';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    /* ── Sync app.js #boxCandidate rows → visual card grid ── */
+    function syncCandidateCards() {
+      const tbody = document.getElementById('boxCandidate');
+      const grid = document.getElementById('candidateGrid');
+      const loading = document.getElementById('candidatesLoading');
+      const empty = document.getElementById('candidatesEmpty');
+      const count = document.getElementById('candidateCount');
+
+      loading.style.display = 'none';
+      grid.innerHTML = '';
+      const rows = tbody.querySelectorAll('tr');
+      count.textContent = rows.length;
+
+      if (rows.length === 0) {
+        empty.style.display = 'flex';
+        return;
+      }
+      empty.style.display = 'none';
+
+      rows.forEach((row, idx) => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 3) return;
+        const logoCell = cells[0].innerHTML;
+        const name = cells[1].textContent.trim();
+        const party = cells[2].textContent.trim();
+
+        const card = document.createElement('div');
+        card.className = 'candidate-card';
+        card.style.animationDelay = (idx * 0.06) + 's';
+        card.innerHTML = `
+          <div class="candidate-logo">${logoCell}</div>
+          <div class="candidate-info">
+            <h3 class="candidate-name">${name}</h3>
+            <p class="candidate-party"><i class="fa-solid fa-flag"></i> ${party}</p>
+          </div>
+          <div class="candidate-id-badge">#${idx + 1}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    /* MutationObserver on #boxCandidate */
+    const observer = new MutationObserver(() => syncCandidateCards());
+    observer.observe(document.getElementById('boxCandidate'), { childList: true, subtree: true });
+
+    /* Timeout fallback */
+    setTimeout(() => {
+      const rows = document.getElementById('boxCandidate').querySelectorAll('tr');
+      if (rows.length > 0) syncCandidateCards();
+      else {
+        document.getElementById('candidatesLoading').style.display = 'none';
+        document.getElementById('candidatesEmpty').style.display = 'flex';
+      }
+    }, 8000);
+  </script>
+</body>
+</html>

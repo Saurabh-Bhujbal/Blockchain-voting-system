@@ -1,0 +1,234 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap');
+
+/* ============================================================
+   GLOBAL THEME TOKENS
+   ============================================================ */
+:root {
+  --gold:        #C5A542;
+  --gold-light:  #D4B968;
+  --gold-dim:    rgba(197, 165, 66, 0.15);
+  --saffron:     #E67326;
+  --green:       #34B358;
+  --navy-deep:   #0B132B;
+  --navy:        #111C3A;
+  --navy-mid:    #1C2D54;
+  --navy-card:   rgba(17, 28, 58, 0.7);
+  --white:       #FFFFFF;
+  --text-muted:  #94A3B8;
+  --text-light:  #CBD5E1;
+  --border:      rgba(197, 165, 66, 0.2);
+  --glass-bg:    rgba(255, 255, 255, 0.04);
+  --glass-border:rgba(255, 255, 255, 0.08);
+  --shadow-gold: 0 0 40px rgba(197, 165, 66, 0.15);
+  --font: 'Inter', sans-serif;
+  --font-display: 'Playfair Display', serif;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--navy-deep);
+  color: var(--text-light);
+  line-height: 1.7;
+  overflow-x: hidden;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--navy-deep); }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+/* ─── Tricolor Strip ─── */
+.tricolor {
+  height: 4px;
+  background: linear-gradient(90deg, var(--saffron) 33.33%, #FFFFFF 33.33%, #FFFFFF 66.66%, var(--green) 66.66%);
+}
+
+/* ─── Navbar ─── */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(11, 19, 43, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+}
+
+.brand-emblem {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--navy-deep);
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(197, 165, 66, 0.4);
+}
+
+.brand-text h1 {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+}
+
+.brand-text p {
+  font-size: 10px;
+  color: var(--gold);
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: all 0.25s;
+}
+
+.nav-links a:hover {
+  color: var(--white);
+  background: var(--glass-bg);
+}
+
+.nav-cta {
+  background: linear-gradient(135deg, var(--gold), var(--saffron)) !important;
+  color: var(--navy-deep) !important;
+  font-weight: 700 !important;
+  padding: 8px 20px !important;
+  box-shadow: 0 0 20px rgba(197, 165, 66, 0.3);
+}
+
+.nav-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 30px rgba(197, 165, 66, 0.5) !important;
+}
+
+/* ─── Buttons ─── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--saffron) 100%);
+  color: var(--navy-deep);
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: 10px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 6px 20px rgba(197, 165, 66, 0.3);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(197, 165, 66, 0.4); }
+
+/* ─── Glass Container ─── */
+.glass-container {
+  background: var(--glass-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px;
+  backdrop-filter: blur(20px);
+}
+
+/* ─── Footer ─── */
+footer {
+  background: #080E1D;
+  border-top: 1px solid var(--border);
+  padding: 60px 40px 30px;
+  margin-top: auto;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr;
+  gap: 60px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.footer-brand p { font-size: 14px; color: var(--text-muted); margin-top: 16px; max-width: 340px; line-height: 1.8; }
+
+.footer-col h4 { font-size: 13px; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
+
+.footer-col a {
+  display: block;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 12px;
+  transition: color 0.2s;
+}
+
+.footer-col a:hover { color: var(--white); }
+
+.footer-bottom {
+  padding-top: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-bottom p { font-size: 13px; color: var(--text-muted); }
+
+.footer-badges { display: flex; gap: 12px; align-items: center; }
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gold-dim);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 100px;
+}
+
+@media (max-width: 900px) {
+  .footer-top { grid-template-columns: 1fr; gap: 40px; }
+  .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+  .navbar { padding: 0 20px; }
+  .nav-links { display: none; } /* Hide on very small screens for now unless expanded */
+}

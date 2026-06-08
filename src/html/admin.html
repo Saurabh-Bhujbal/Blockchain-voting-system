@@ -1,46 +1,77 @@
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin portal</title>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administration Panel — Election Commission</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8000 http://127.0.0.1:7545 http://localhost:8545;">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <!-- Tricolor Strip -->
+  <div class="tricolor"></div>
 
-    <link rel="stylesheet" type="text/css" href="../css/admin.css">
-    
-  </head>
-  <body>
-    <div id="head" class="text-center">
-      <h1 align="center" style="color: azure;">Decentralized Voting Using Ethereum Blockchain</h1>
-      <br/> 
-    </div>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/landing.html" class="brand">
+      <div class="brand-emblem">
+        <i class="fa-solid fa-dharmachakra"></i>
+      </div>
+      <div class="brand-text">
+        <h1>Election Commission</h1>
+        <p>Administration Panel</p>
+      </div>
+    </a>
+    <button class="btn btn-danger-outline" onclick="logout()" style="font-size: 13px; padding: 8px 18px; border-color: rgba(255,255,255,0.3); color: #fff;"><i class="fa-solid fa-right-from-bracket" style="margin-right: 6px;"></i>Log Out</button>
+  </nav>
 
-    <div class="container">
-     <legend>Add Candidate</legend>  
-     <table  class="table text-center"> 
-              <tr>
-                <th>Name </th><td>  <input id="name" type="text" name="name" placeholder ="Candidates name" autocomplete="off"></td>  
-                <th>Party</th><td><input id="party" type="text" name="party" placeholder ="Candidates party"></td> 
-              </tr>
-      </table> 
-      <input id="addCandidate" type="submit" name="submit" value="Add Candidate">
-      <p id="Aday"></p>
-    </div>
+  <div class="admin-wrap">
+    <p class="page-eyebrow">Administration Panel</p>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-sub">Manage Elections, configure voting periods, and monitor results.</p>
 
-    <div class="container">
-     <legend>Define Voting Dates</legend>  
-     <table  class="table text-center"> 
-              <tr>              
-                <th>Start date</th><td><input id="startDate" type="date" name=""></td>
-                <th>End date</th><td>    <input id="endDate" type="date" name="" ></td>
-              </tr>
-      </table> 
-      <input id="addDate" type="submit" name="submit" value="Define Dates">
-      <p id="Aday"></p>
+    <div class="tile-grid">
+
+      <!-- Tile 1 -->
+      <div class="nav-tile" onclick="navigate('addCandidate.html')">
+        <div class="tile-icon">🧑‍💼</div>
+        <h2>Manage Elections</h2>
+        <p>Add candidates to the blockchain registry and configure the voting date window.</p>
+      </div>
+
+      <!-- Tile 2 -->
+      <div class="nav-tile" onclick="navigate('viewResults.html')" style="border-color:rgba(22,163,74,0.25);">
+        <div class="tile-icon" style="background:var(--success-lt);">📊</div>
+        <h2>View Results</h2>
+        <p>Monitor real-time vote tallies fetched directly from the Ethereum smart contract.</p>
+      </div>
+
     </div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"></script>
-  <script src="../dist/app.bundle.js" type="module"></script>
-  </body>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        <p>&copy; 2024 Election Commission. All rights reserved. Powered by Ethereum Blockchain & FastAPI.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function navigate(page) {
+      const auth = new URLSearchParams(window.location.search).get('Authorization');
+      if (auth) {
+        window.location.href = `./${page}?Authorization=${encodeURIComponent(auth)}`;
+      } else {
+        window.location.href = '/';
+      }
+    }
+    function logout() {
+      localStorage.removeItem('jwtTokenAdmin');
+      window.location.href = '/adminLogin.html';
+    }
+  </script>
+</body>
 </html>

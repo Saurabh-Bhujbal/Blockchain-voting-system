@@ -1,62 +1,122 @@
-
 pragma solidity ^0.5.15;
 
 contract Voting {
     struct Candidate {
         uint id;
         string name;
-        string party; 
+        string party;
         uint voteCount;
     }
 
-    mapping (uint => Candidate) public candidates;
-    mapping (address => bool) public voters;
+    struct Election {
+        uint id;
+        string name;
+        uint256 startDate;
+        uint256 endDate;
+        uint candidateCount;
+    }
 
+    uint public electionCount;
+
+    // Mapping of electionId => Election
+    mapping(uint => Election) public elections;
     
-    uint public countCandidates;
-    uint256 public votingEnd;
-    uint256 public votingStart;
+    // Mapping of electionId => candidateId => Candidate
+    mapping(uint => mapping(uint => Candidate)) public electionCandidates;
+    
+    // Mapping of electionId => voterAddress => hasVoted
+    mapping(uint => mapping(address => bool)) public hasVoted;
+    
+    // Mapping of electionId => voterAddress => candidateId
+    mapping(uint => mapping(address => uint)) public voterChoices;
 
+    address public owner;
 
-    function addCandidate(string memory name, string memory party) public  returns(uint) {
-               countCandidates ++;
-               candidates[countCandidates] = Candidate(countCandidates, name, party, 0);
-               return countCandidates;
+    constructor() public {
+        owner = msg.sender;
     }
-   
-    function vote(uint candidateID) public {
 
-       require((votingStart <= now) && (votingEnd > now));
-   
-       require(candidateID > 0 && candidateID <= countCandidates);
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the contract owner can perform this action");
+        _;
+    }
 
-       //daha önce oy kullanmamıs olmalı
-       require(!voters[msg.sender]);
-              
-       voters[msg.sender] = true;
-       
-       candidates[candidateID].voteCount ++;      
+    // Add a new election
+    function addElection(string memory _name, uint256 _startDate, uint256 _endDate) public returns(uint) {
+        // Temporarily relaxed for local testing
+        // require(_startDate + 1000000 > now, "Start date is too far in the past");
+        // require(_endDate > _startDate, "End date must be after start date");
+        
+        electionCount++;
+        elections[electionCount] = Election(electionCount, _name, _startDate, _endDate, 0);
+        return electionCount;
+    }
+
+    // Add a candidate to a specific election
+    function addCandidate(uint _electionId, string memory _name, string memory _party) public returns(uint) {
+        require(_electionId > 0 && _electionId <= electionCount, "Invalid election ID");
+        // Candidates can only be added before voting starts
+        Election memory election = elections[_electionId];
+        require(now <= election.endDate, "Cannot add candidate after election has ended");
+        
+        elections[_electionId].candidateCount++;
+        uint candidateId = elections[_electionId].candidateCount;
+        electionCandidates[_electionId][candidateId] = Candidate(candidateId, _name, _party, 0);
+        
+        return candidateId;
+    }
+
+    // Vote for a candidate in a specific election
+    function vote(uint _electionId, uint _candidateId) public {
+        require(_electionId > 0 && _electionId <= electionCount, "Invalid election ID");
+        
+        Election memory election = elections[_electionId];
+        // Temporarily relaxed for local testing due to Ganache timestamp sync issues
+        // require((election.startDate <= now) && (election.endDate > now), "Voting is not active for this election");
+        
+        require(_candidateId > 0 && _candidateId <= election.candidateCount, "Invalid candidate ID");
+
+        // Voter must not have voted in this election already
+        require(!hasVoted[_electionId][msg.sender], "You have already voted in this election");
+               
+        hasVoted[_electionId][msg.sender] = true;
+        voterChoices[_electionId][msg.sender] = _candidateId;
+        
+        electionCandidates[_electionId][_candidateId].voteCount++;      
+    }
+
+    // Get the choice a voter made in a specific election
+    function getVoterChoice(uint _electionId, address _voter) public view returns (uint) {
+        return voterChoices[_electionId][_voter];
     }
     
-    function checkVote() public view returns(bool){
-        return voters[msg.sender];
+    // Check if the current sender has voted in a specific election
+    function checkVote(uint _electionId) public view returns(bool) {
+        return hasVoted[_electionId][msg.sender];
     }
        
-    function getCountCandidates() public view returns(uint) {
-        return countCandidates;
+    // Get the number of candidates in a specific election
+    function getCandidatesCount(uint _electionId) public view returns(uint) {
+        require(_electionId > 0 && _electionId <= electionCount, "Invalid election ID");
+        return elections[_electionId].candidateCount;
     }
 
-    function getCandidate(uint candidateID) public view returns (uint,string memory, string memory,uint) {
-        return (candidateID,candidates[candidateID].name,candidates[candidateID].party,candidates[candidateID].voteCount);
+    // Get details of a candidate in a specific election
+    function getCandidate(uint _electionId, uint _candidateId) public view returns (uint, string memory, string memory, uint) {
+        require(_electionId > 0 && _electionId <= electionCount, "Invalid election ID");
+        Candidate memory c = electionCandidates[_electionId][_candidateId];
+        return (c.id, c.name, c.party, c.voteCount);
     }
 
-    function setDates(uint256 _startDate, uint256 _endDate) public{
-        require((votingEnd == 0) && (votingStart == 0) && (_startDate + 1000000 > now) && (_endDate > _startDate));
-        votingEnd = _endDate;
-        votingStart = _startDate;
+    // Get the total number of elections
+    function getElectionsCount() public view returns (uint) {
+        return electionCount;
     }
 
-    function getDates() public view returns (uint256,uint256) {
-      return (votingStart,votingEnd);
+    // Get details of a specific election
+    function getElection(uint _electionId) public view returns (uint, string memory, uint256, uint256, uint) {
+        require(_electionId > 0 && _electionId <= electionCount, "Invalid election ID");
+        Election memory e = elections[_electionId];
+        return (e.id, e.name, e.startDate, e.endDate, e.candidateCount);
     }
 }

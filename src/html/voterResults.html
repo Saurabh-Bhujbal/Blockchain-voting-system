@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Election Results — Voter Portal</title>
+  <meta name="description" content="Election results fetched directly from the Ethereum smart contract.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:8000 http://127.0.0.1:7545 http://localhost:8545;">
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/results.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Tricolor Strip -->
+  <div class="tricolor"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/index.html" class="brand">
+      <div class="brand-emblem">
+        <i class="fa-solid fa-dharmachakra"></i>
+      </div>
+      <div class="brand-text">
+        <h1>Election Commission</h1>
+        <p>Citizen Voter Portal</p>
+      </div>
+    </a>
+    <div class="nav-actions">
+      <button class="btn-refresh" id="refreshBtn" onclick="location.reload()">
+        <i class="fa-solid fa-rotate-right"></i>
+        Refresh Results
+      </button>
+      <a id="backBtn" class="btn-back-nav">
+        <i class="fa-solid fa-arrow-left"></i>
+        Dashboard
+      </a>
+      <button class="btn btn-danger-outline" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Log Out
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero Header -->
+  <div class="results-hero">
+    <div class="results-hero-inner">
+      <h1 class="results-hero-title" id="electionNameDisplay">Loading Election...</h1>
+      <p class="results-hero-sub">Final Vote Tally fetched immutably from the Ethereum smart contract.</p>
+
+      <!-- Summary Stats Bar -->
+      <div class="stats-bar" id="statsBar">
+        <div class="stat-item">
+          <span class="stat-value" id="totalCandidates">—</span>
+          <span class="stat-label">Candidates</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value" id="totalVotes">—</span>
+          <span class="stat-label">Total Votes</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value" id="leadingCandidate">—</span>
+          <span class="stat-label">Winner</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Content -->
+  <div class="results-layout">
+
+    <!-- Winner Spotlight (shown when data loads) -->
+    <div class="winner-card" id="winnerCard" style="display:none;">
+      <div class="winner-crown"><i class="fa-solid fa-crown"></i></div>
+      <div class="winner-logo-wrap" id="winnerLogo"></div>
+      <div class="winner-info">
+        <p class="winner-label">Election Winner</p>
+        <h2 class="winner-name" id="winnerName">—</h2>
+        <p class="winner-party" id="winnerParty">—</p>
+      </div>
+      <div class="winner-votes-wrap">
+        <span class="winner-votes" id="winnerVotes">0</span>
+        <span class="winner-votes-label">votes</span>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="results-loading" id="resultsLoading">
+      <div class="results-loading-spinner"></div>
+      <p>Fetching final results from the blockchain…</p>
+    </div>
+
+    <!-- Results Table Card -->
+    <div class="results-table-card" id="resultsTableCard" style="display:none;">
+      <div class="results-table-header">
+        <h2 class="results-table-title">
+          <i class="fa-solid fa-ranking-star"></i>
+          Final Tally
+        </h2>
+        <p class="results-table-sub">Ranked by vote count</p>
+      </div>
+
+      <!-- Bar chart area -->
+      <div class="bar-chart-area" id="barChartArea"></div>
+
+      <!-- Traditional Table (hidden by default, kept for app.js compatibility) -->
+      <div style="display:none;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Party Logo</th>
+              <th>Candidate</th>
+              <th>Party</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="boxCandidate"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Blockchain Badge -->
+    <div class="blockchain-badge">
+      <i class="fa-brands fa-ethereum"></i>
+      <span>All data fetched immutably from the Ganache ledger</span>
+    </div>
+
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom" style="justify-content:center;">
+        <p>© 2024 Election Commission. All rights reserved. Powered by Ethereum Blockchain & FastAPI.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="../dist/app.bundle.js" type="module"></script>
+  <script>
+    /* ── Auth / Navigation ── */
+    const auth = new URLSearchParams(window.location.search).get('Authorization');
+    document.getElementById('backBtn').onclick = () => {
+      window.location.href = `/index.html?Authorization=${encodeURIComponent(auth)}`;
+    };
+    document.querySelector('.brand').onclick = (e) => {
+      e.preventDefault();
+      window.location.href = `/index.html?Authorization=${encodeURIComponent(auth)}`;
+    };
+    function logout() {
+      localStorage.removeItem('jwtTokenVoter');
+      window.location.href = '/voterLogin.html';
+    }
+
+    /* ── Sync app.js table rows into visual bar chart ── */
+    function buildResultsUI() {
+      const tbody = document.getElementById('boxCandidate');
+      const rows = tbody.querySelectorAll('tr');
+      if (rows.length === 0) return;
+
+      const loading = document.getElementById('resultsLoading');
+      const tableCard = document.getElementById('resultsTableCard');
+      const winnerCard = document.getElementById('winnerCard');
+      const barChart = document.getElementById('barChartArea');
+
+      loading.style.display = 'none';
+      tableCard.style.display = 'block';
+
+      // Parse data (voter UI sets vote counts differently from admin, wait, let's fix this!)
+      // Wait, app.js loadCandidates sets actionContent = `<td><button ...>Vote</button></td>` for voters!
+      // But we are on voterResults.html, we should show the vote count!
+      // In app.js: const isResultsPage = path.includes("viewResults.html");
+      // We must also include voterResults.html in that check! Let's just grab what is in td[3]
+      // Actually we will fix app.js to output vote counts for voterResults.html
+      
+      const candidates = [];
+      rows.forEach((row, idx) => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length < 4) return;
+        
+        let votesText = cells[3].textContent.trim();
+        // Fallback in case app.js outputs a button
+        if(votesText.includes('Vote')) votesText = '0';
+        
+        candidates.push({
+          logo: cells[0].innerHTML,
+          name: cells[1].textContent.trim(),
+          party: cells[2].textContent.trim(),
+          votes: parseInt(votesText) || 0,
+          rank: idx + 1
+        });
+      });
+
+      // Sort by votes descending
+      candidates.sort((a, b) => b.votes - a.votes);
+
+      const totalVotes = candidates.reduce((s, c) => s + c.votes, 0);
+      const maxVotes = candidates[0]?.votes || 1;
+
+      // Update stats bar
+      document.getElementById('totalCandidates').textContent = candidates.length;
+      document.getElementById('totalVotes').textContent = totalVotes.toLocaleString();
+      document.getElementById('leadingCandidate').textContent = candidates[0]?.name || '—';
+
+      // Winner spotlight
+      if (candidates.length > 0 && totalVotes > 0) {
+        const w = candidates[0];
+        document.getElementById('winnerName').textContent = w.name;
+        document.getElementById('winnerParty').textContent = w.party;
+        document.getElementById('winnerVotes').textContent = w.votes.toLocaleString();
+        document.getElementById('winnerLogo').innerHTML = w.logo;
+        winnerCard.style.display = 'flex';
+        winnerCard.classList.add('animate-in');
+      }
+
+      // Build bar chart rows
+      barChart.innerHTML = '';
+      candidates.forEach((c, idx) => {
+        const pct = totalVotes > 0 ? ((c.votes / totalVotes) * 100).toFixed(1) : 0;
+        const barPct = maxVotes > 0 ? ((c.votes / maxVotes) * 100) : 0;
+        const isLeader = idx === 0 && c.votes > 0;
+
+        const row = document.createElement('div');
+        row.className = 'result-row' + (isLeader ? ' result-row--leader' : '');
+        row.style.animationDelay = (idx * 0.08) + 's';
+        row.innerHTML = `
+          <div class="result-rank">${idx === 0 && c.votes > 0 ? '<i class="fa-solid fa-crown crown-icon"></i>' : '#' + (idx + 1)}</div>
+          <div class="result-logo">${c.logo}</div>
+          <div class="result-info">
+            <div class="result-name-row">
+              <span class="result-name">${c.name}</span>
+              ${isLeader ? '<span class="leader-chip"><i class="fa-solid fa-star"></i> Winner</span>' : ''}
+            </div>
+            <span class="result-party">${c.party}</span>
+          </div>
+          <div class="result-bar-col">
+            <div class="result-bar-track">
+              <div class="result-bar-fill ${isLeader ? 'result-bar-fill--gold' : ''}"
+                   style="width: 0%; --target-w: ${barPct}%"></div>
+            </div>
+            <span class="result-pct">${pct}%</span>
+          </div>
+          <div class="result-votes">
+            <span class="result-vote-num">${c.votes.toLocaleString()}</span>
+            <span class="result-vote-label">votes</span>
+          </div>
+        `;
+        barChart.appendChild(row);
+      });
+
+      // Animate bars after slight delay
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          document.querySelectorAll('.result-bar-fill').forEach(bar => {
+            bar.style.width = bar.style.getPropertyValue('--target-w');
+          });
+        }, 150);
+      });
+    }
+
+    /* MutationObserver on #boxCandidate */
+    const observer = new MutationObserver(() => {
+      const rows = document.getElementById('boxCandidate').querySelectorAll('tr');
+      if (rows.length > 0) buildResultsUI();
+    });
+    observer.observe(document.getElementById('boxCandidate'), { childList: true, subtree: true });
+
+    /* Timeout fallback: hide spinner if still empty after 8s */
+    setTimeout(() => {
+      const rows = document.getElementById('boxCandidate').querySelectorAll('tr');
+      if (rows.length > 0) {
+        buildResultsUI();
+      } else {
+        document.getElementById('resultsLoading').innerHTML = `
+          <div class="empty-results-icon"><i class="fa-solid fa-box-open"></i></div>
+          <p>No candidates found on the blockchain.</p>
+        `;
+      }
+    }, 8000);
+  </script>
+</body>
+</html>
