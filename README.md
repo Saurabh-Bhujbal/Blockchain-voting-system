@@ -271,6 +271,4 @@ GitHub: [@Saurabh-Bhujbal](https://github.com/Saurabh-Bhujbal)
 ---
 
 ## © Copyright
-Copyright © 2026 Saurabh Bhujbal. All rights reserved under the terms of the [MIT License](LICENSE).
-
-Copyright © 2026 Saurabh Bhujbal. All rights reserved under the terms of the [MIT License](LICENSE).
+Copyright © 2026 Saurabh Bhujbal. All rights reserved under the terms of the MIT License
